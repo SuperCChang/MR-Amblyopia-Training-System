@@ -23,9 +23,8 @@ class MainMenu(BaseGame):
             if event.key == pygame.K_1:
                 self.app.change_scene('snake')
 
-    def update(self):
-        # 菜单暂时没什么要动的
-        pass
+    def update(self, dt):
+        super().update(dt)
 
     def draw_content(self, surface):
         # 只画文字，背景已经在父类 draw() 里画好了

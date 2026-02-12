@@ -9,7 +9,6 @@ from settings import COLORS, DIFFICULTY_LEVELS
 
 class GameManager:
     def __init__(self):
-        self.clock = pygame.time.Clock()
         self.is_running = True
         
         # 【核心】全局难度等级 (索引 0-9)
@@ -45,9 +44,9 @@ class GameManager:
         if self.current_scene:
             self.current_scene.handle_input(event)
 
-    def update(self):
+    def update(self, dt):
         if self.current_scene:
-            self.current_scene.update()
+            self.current_scene.update(dt)
 
     def draw(self, surface):
         if self.current_scene:

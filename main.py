@@ -13,19 +13,23 @@ def main():
     clock = pygame.time.Clock()
 
     game_manager = GameManager()
-    game_manager.load_scenes() # 【关键】加载场景
+    game_manager.load_scenes()
 
     while game_manager.is_running:
+        # 1. 计算时间增量 (dt: delta time, 单位: 毫秒)
+        # clock.tick(FPS) 会限制帧率，并返回两次调用之间的时间间隔
+        dt = clock.tick(FPS) 
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_manager.is_running = False
             game_manager.handle_input(event)
 
-        game_manager.update()
+        # 2. 【关键修改】把 dt 传给管理器
+        game_manager.update(dt)
+        
         game_manager.draw(screen)
-
         pygame.display.flip()
-        clock.tick(FPS)
 
     pygame.quit()
     sys.exit()

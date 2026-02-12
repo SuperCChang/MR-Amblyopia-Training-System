@@ -25,23 +25,23 @@ COLORS = {
 # 800 的约数: 200, 160, 100, 80, 50, 40, 25, 20
 DIFFICULTY_LEVELS = [
     # Level 0 (最简单): 超大字，网格巨大，蛇很慢，线条很细
-    {'font_size': 300, 'grid_size': 100, 'stripe_width': 10, 'snake_speed': 300},
+    {'font_size': 300, 'grid_size': 100, 'stripe_width': 30, 'snake_speed': 300},
     # Level 1
-    {'font_size': 260, 'grid_size': 80,  'stripe_width': 9, 'snake_speed': 250},
+    {'font_size': 260, 'grid_size': 80,  'stripe_width': 25, 'snake_speed': 250},
     # Level 2
-    {'font_size': 220, 'grid_size': 80,  'stripe_width': 8, 'snake_speed': 200},
+    {'font_size': 220, 'grid_size': 80,  'stripe_width': 20, 'snake_speed': 200},
     # Level 3
-    {'font_size': 180, 'grid_size': 50,  'stripe_width': 7, 'snake_speed': 160},
+    {'font_size': 180, 'grid_size': 50,  'stripe_width': 15, 'snake_speed': 160},
     # Level 4
-    {'font_size': 140, 'grid_size': 50,  'stripe_width': 6, 'snake_speed': 130},
+    {'font_size': 140, 'grid_size': 50,  'stripe_width': 10, 'snake_speed': 130},
     # Level 5
-    {'font_size': 100, 'grid_size': 40,  'stripe_width': 5, 'snake_speed': 100},
+    {'font_size': 100, 'grid_size': 40,  'stripe_width': 8, 'snake_speed': 100},
     # Level 6
-    {'font_size': 80,  'grid_size': 40,  'stripe_width': 4, 'snake_speed': 80},
+    {'font_size': 80,  'grid_size': 40,  'stripe_width': 6, 'snake_speed': 80},
     # Level 7
-    {'font_size': 60,  'grid_size': 25,  'stripe_width': 3,'snake_speed': 60},
+    {'font_size': 60,  'grid_size': 25,  'stripe_width': 5,'snake_speed': 60},
     # Level 8
-    {'font_size': 40,  'grid_size': 25,  'stripe_width': 2,'snake_speed': 50},
+    {'font_size': 40,  'grid_size': 25,  'stripe_width': 3,'snake_speed': 50},
     # Level 9 (地狱): 字超小，网格超密，蛇极快，背景线条巨粗(干扰视线)
-    {'font_size': 20,  'grid_size': 20,  'stripe_width': 1,'snake_speed': 40},
+    {'font_size': 20,  'grid_size': 20,  'stripe_width': 2,'snake_speed': 40},
 ]

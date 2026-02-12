@@ -87,3 +87,6 @@ class EyesightGame(BaseGame):
         info_font = pygame.font.SysFont("arial", 20)
         status = f"Level: {self.current_level} | Mistakes: {self.mistakes_in_row}/{self.max_mistakes}"
         surface.blit(info_font.render(status, True, COLORS['black']), (10, 10))
+    
+    def update(self, dt):
+        pass

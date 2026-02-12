@@ -53,13 +53,15 @@ class SnakeGame(BaseGame):
             elif event.key == pygame.K_RIGHT and self.direction != (-1, 0):
                 self.direction = (1, 0)
 
-    def update(self):
-        super().update() # 别忘了背景计时
+    def update(self, dt): # <--- 【修改】接收 dt
+        # 1. 传给父类 (让背景计时器能走到)
+        super().update(dt) 
         
-        current_time = pygame.time.get_ticks()
-        if current_time - self.move_timer > self.move_interval:
+        # 2. 自己的逻辑
+        self.move_timer += dt # 既然有了 dt，你甚至可以用它来替代 pygame.time.get_ticks() 计时
+        if self.move_timer > self.move_interval:
             self.move_snake()
-            self.move_timer = current_time
+            self.move_timer = 0 # 重置
 
     def move_snake(self):
         head_x, head_y = self.snake[0]

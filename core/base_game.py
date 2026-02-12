@@ -19,9 +19,7 @@ class BaseGame:
             elif event.key == pygame.K_ESCAPE:
                 self.app.change_scene('menu')
 
-    def update(self):
-        # 自动切换逻辑
-        dt = self.app.clock.get_time()
+    def update(self, dt):
         self.bg_timer += dt
         
         if self.bg_timer >= self.SWITCH_INTERVAL:
