@@ -33,7 +33,7 @@ class BaseGame:
         settings = DIFFICULTY_LEVELS[current_diff]
         
         # 提取独立的变量
-        g_size = settings['grid_size']      # 用于网格背景
+        g_size = settings['bg_grid_size']      # 用于网格背景
         s_width = settings['stripe_width']  # 用于条栅背景
         
         current_time = pygame.time.get_ticks()

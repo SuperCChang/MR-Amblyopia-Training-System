@@ -3,7 +3,7 @@ from settings import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS
 
 class BackgroundRenderer:
     @staticmethod
-    def draw(surface, mode_index, current_time, grid_size, stripe_width):
+    def draw(surface, mode_index, current_time, bg_grid_size, stripe_width):
         """
         mode_index (0-8):
         0-2: 纯色
@@ -43,7 +43,7 @@ class BackgroundRenderer:
             alt_color = color_b if state == 0 else color_a
             
             # 【核心修改】调用棋盘格绘制
-            BackgroundRenderer._draw_checkerboard(surface, main_color, alt_color, grid_size)
+            BackgroundRenderer._draw_checkerboard(surface, main_color, alt_color, bg_grid_size)
 
     # --- 辅助绘制方法 ---
 

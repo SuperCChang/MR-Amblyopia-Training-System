@@ -37,26 +37,26 @@ class SnakeGame(BaseGame):
         diff_index = self.app.difficulty
         settings = DIFFICULTY_LEVELS[diff_index]
         
-        self.grid_size = settings['grid_size']
+        self.game_grid_size = settings['game_grid_size']
         self.move_interval = settings['snake_speed']
         
         # --- 图片缩放 ---
         if self.images_loaded:
-            self.img_head = pygame.transform.scale(self.raw_head, (self.grid_size, self.grid_size))
-            self.img_body = pygame.transform.scale(self.raw_body, (self.grid_size, self.grid_size))
-            self.img_corner = pygame.transform.scale(self.raw_corner, (self.grid_size, self.grid_size))
-            self.img_tail = pygame.transform.scale(self.raw_tail, (self.grid_size, self.grid_size))
-            self.img_food = pygame.transform.scale(self.raw_food, (self.grid_size, self.grid_size))
+            self.img_head = pygame.transform.scale(self.raw_head, (self.game_grid_size, self.game_grid_size))
+            self.img_body = pygame.transform.scale(self.raw_body, (self.game_grid_size, self.game_grid_size))
+            self.img_corner = pygame.transform.scale(self.raw_corner, (self.game_grid_size, self.game_grid_size))
+            self.img_tail = pygame.transform.scale(self.raw_tail, (self.game_grid_size, self.game_grid_size))
+            self.img_food = pygame.transform.scale(self.raw_food, (self.game_grid_size, self.game_grid_size))
 
         # 初始化蛇
-        start_x = (SCREEN_WIDTH // self.grid_size // 2) * self.grid_size
-        start_y = (SCREEN_HEIGHT // self.grid_size // 2) * self.grid_size
+        start_x = (SCREEN_WIDTH // self.game_grid_size // 2) * self.game_grid_size
+        start_y = (SCREEN_HEIGHT // self.game_grid_size // 2) * self.game_grid_size
         
         # 初始长度至少为3，才能明显看到头、身、尾
         self.snake = [
             (start_x, start_y),
-            (start_x - self.grid_size, start_y),
-            (start_x - 2 * self.grid_size, start_y)
+            (start_x - self.game_grid_size, start_y),
+            (start_x - 2 * self.game_grid_size, start_y)
         ]
         self.direction = (1, 0)
         self.score = 0
@@ -68,11 +68,11 @@ class SnakeGame(BaseGame):
             self._add_new_food()
 
     def _add_new_food(self):
-        cols = SCREEN_WIDTH // self.grid_size
-        rows = SCREEN_HEIGHT // self.grid_size
+        cols = SCREEN_WIDTH // self.game_grid_size
+        rows = SCREEN_HEIGHT // self.game_grid_size
         while True:
-            x = random.randint(0, cols - 1) * self.grid_size
-            y = random.randint(0, rows - 1) * self.grid_size
+            x = random.randint(0, cols - 1) * self.game_grid_size
+            y = random.randint(0, rows - 1) * self.game_grid_size
             pos = (x, y)
             if pos not in self.snake and pos not in self.foods:
                 self.foods.append(pos)
@@ -108,8 +108,8 @@ class SnakeGame(BaseGame):
         head_x, head_y = self.snake[0]
         dx, dy = self.direction
         
-        new_x = (head_x + dx * self.grid_size) % SCREEN_WIDTH
-        new_y = (head_y + dy * self.grid_size) % SCREEN_HEIGHT
+        new_x = (head_x + dx * self.game_grid_size) % SCREEN_WIDTH
+        new_y = (head_y + dy * self.game_grid_size) % SCREEN_HEIGHT
         new_head = (new_x, new_y)
 
         if new_head in self.snake:
@@ -136,12 +136,12 @@ class SnakeGame(BaseGame):
         
         # 处理 X 轴穿墙
         # 如果距离超过半个屏幕，说明发生了穿墙，实际方向是反的
-        if dx > SCREEN_WIDTH / 2: dx = -self.grid_size
-        elif dx < -SCREEN_WIDTH / 2: dx = self.grid_size
+        if dx > SCREEN_WIDTH / 2: dx = -self.game_grid_size
+        elif dx < -SCREEN_WIDTH / 2: dx = self.game_grid_size
         
         # 处理 Y 轴穿墙
-        if dy > SCREEN_HEIGHT / 2: dy = -self.grid_size
-        elif dy < -SCREEN_HEIGHT / 2: dy = self.grid_size
+        if dy > SCREEN_HEIGHT / 2: dy = -self.game_grid_size
+        elif dy < -SCREEN_HEIGHT / 2: dy = self.game_grid_size
 
         # 归一化为 (1, 0, -1)
         if dx != 0: dx = dx // abs(dx)
@@ -159,10 +159,10 @@ class SnakeGame(BaseGame):
         dy = current_pos[1] - prev_pos[1]
         
         # 处理穿墙情况 (例如从左边穿到右边，dx 会很大)
-        if dx > self.grid_size: dx = -self.grid_size # 实际是向左走
-        elif dx < -self.grid_size: dx = self.grid_size # 实际是向右走
-        if dy > self.grid_size: dy = -self.grid_size
-        elif dy < -self.grid_size: dy = self.grid_size
+        if dx > self.game_grid_size: dx = -self.game_grid_size # 实际是向左走
+        elif dx < -self.game_grid_size: dx = self.game_grid_size # 实际是向右走
+        if dy > self.game_grid_size: dy = -self.game_grid_size
+        elif dy < -self.game_grid_size: dy = self.game_grid_size
 
         if dx > 0: return 0      # Right
         if dx < 0: return 180    # Left
@@ -171,37 +171,36 @@ class SnakeGame(BaseGame):
         return 0
 
     def draw_content(self, surface):
-        # --- 画苹果 ---
+        # 1. 画苹果
         for food_pos in self.foods:
             if self.images_loaded:
                 surface.blit(self.img_food, food_pos)
             else:
-                pygame.draw.rect(surface, COLORS['red'], (*food_pos, self.grid_size, self.grid_size))
+                pygame.draw.rect(surface, COLORS['red'], (*food_pos, self.game_grid_size, self.game_grid_size))
 
-
+        # 2. 画蛇
         for i, segment in enumerate(self.snake):
-            # 获取绘制坐标矩形 (居中辅助)
             rect_pos = (segment[0], segment[1])
             
             if not self.images_loaded:
-                # 备用方块绘制 (代码不变)
-                pygame.draw.rect(surface, (0, 255, 0), (*segment, self.grid_size, self.grid_size))
+                # 备用方块绘制
+                color = (0, 255, 0)
+                if i == 0: color = (0, 200, 0)
+                pygame.draw.rect(surface, color, (*segment, self.game_grid_size, self.game_grid_size))
                 continue
 
             # --- 图片绘制逻辑 ---
-            img_to_draw = None
+            img_to_draw = None  # 初始化为空
             angle = 0
             
             # A. 蛇头 (Head)
             if i == 0:
+                img_to_draw = self.img_head
+                # 计算头部的朝向
                 if len(self.snake) > 1:
-                    neck = self.snake[1] # 脖子是第2节
-                    
-                    # 计算从 脖子 -> 头 的方向向量
-                    # 注意顺序：_get_neighbor_direction(起点, 终点)
+                    neck = self.snake[1]
                     dx, dy = self._get_neighbor_direction(neck, segment)
                 else:
-                    # 只有头的情况（几乎不会发生），才用 self.direction
                     dx, dy = self.direction
                 
                 if dx == 1: angle = 0
@@ -212,53 +211,47 @@ class SnakeGame(BaseGame):
             # B. 蛇尾 (Tail)
             elif i == len(self.snake) - 1:
                 img_to_draw = self.img_tail
-                # 尾巴看前一节
                 prev = self.snake[i - 1]
                 dx, dy = self._get_neighbor_direction(segment, prev)
-                # 计算角度 (默认尾巴图片向右)
                 if dx == 1: angle = 0
                 elif dx == -1: angle = 180
                 elif dy == 1: angle = 270
                 elif dy == -1: angle = 90
 
-            # C. 蛇身 (Body) - 可能是直的，也可能是拐弯
+            # C. 蛇身 (Body)
             else:
-                # 获取 前一节(prev) 和 后一节(next) 相对于 当前节(segment) 的方向
+                # 【修复】先给一个默认值，防止后面逻辑漏掉赋值
+                img_to_draw = self.img_body 
+                
                 prev = self.snake[i - 1]
                 next_seg = self.snake[i + 1]
                 
-                # p_dir: 指向上一节的方向 (例如: head方向)
-                # n_dir: 指向下一节的方向 (例如: tail方向)
                 p_dir = self._get_neighbor_direction(segment, prev)
                 n_dir = self._get_neighbor_direction(segment, next_seg)
 
-                # 判断是否在同一直线 (x相同 或 y相同)
+                # 判断是否是直身
                 if p_dir[0] == n_dir[0] or p_dir[1] == n_dir[1]:
-                    # --- 直身 ---
                     img_to_draw = self.img_body
-                    # 角度取决于 p_dir (或 n_dir)
-                    if p_dir[0] != 0: angle = 0   # 左右走向
-                    else: angle = 90              # 上下走向
+                    if p_dir[0] != 0: angle = 0
+                    else: angle = 90
                 else:
-                    # --- 拐弯 (Corner) ---
-                    img_to_draw = self.img_corner
-                    
-                    # 拐弯逻辑：判断 p_dir 和 n_dir 的组合
-                    # 假设 corner 图片默认连接 "Right" 和 "Down" (即右下角)
-                    # 我们需要列举 4 种组合 (dx, dy)
-                    
-                    # 这种判断稍微繁琐，但最准确。
-                    # 集合法：不管哪个是prev哪个是next，只要包含这两个方向就行
-                    dirs = {p_dir, n_dir}
-                    
-                    if (1, 0) in dirs and (0, 1) in dirs:     # Right + Down
-                        angle = 0 
-                    elif (-1, 0) in dirs and (0, 1) in dirs:  # Left + Down
-                        angle = 270 # (顺时针转90度变成左下) -> 实际上 pygame rotate 是逆时针，这里微调
-                    elif (-1, 0) in dirs and (0, -1) in dirs: # Left + Up
-                        angle = 180
-                    elif (1, 0) in dirs and (0, -1) in dirs:  # Right + Up
-                        angle = 90
-    
-            rotated_img = pygame.transform.rotate(img_to_draw, angle)
-            surface.blit(rotated_img, rect_pos)
+                    # 拐弯逻辑
+                    # 检查是否加载了 corner 图片，如果没有，就回退到 body
+                    if hasattr(self, 'img_corner'):
+                        img_to_draw = self.img_corner
+                        
+                        # 计算拐弯角度
+                        dirs = {p_dir, n_dir}
+                        # 连接 左(-1,0) 和 上(0,-1) -> 默认角度0 (假设素材是左上的拐角)
+                        if (-1, 0) in dirs and (0, -1) in dirs: angle = 0
+                        elif (0, -1) in dirs and (1, 0) in dirs: angle = 270
+                        elif (1, 0) in dirs and (0, 1) in dirs: angle = 180
+                        elif (0, 1) in dirs and (-1, 0) in dirs: angle = 90
+                    else:
+                        # 如果还没做 corner 图片，就用 body 凑合
+                        img_to_draw = self.img_body
+
+            # 【修复】安全检查：只有当图片不为空时才旋转和绘制
+            if img_to_draw is not None:
+                rotated_img = pygame.transform.rotate(img_to_draw, angle)
+                surface.blit(rotated_img, rect_pos)
