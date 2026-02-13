@@ -1,44 +1,44 @@
-# core/app.py
 import pygame
-from settings import COLORS, DIFFICULTY_LEVELS
+from settings import COLORS
 
-# 稍后导入具体场景
-# from games.main_menu import MainMenu
-# from games.snake.game import SnakeGame
-# from games.eyesight.game import EyesightGame
+# 引入具体场景
+from games.main_menu import MainMenu
+from games.snake.game import SnakeGame
+# from games.eyesight.game import EyesightGame  <--- 【修改1】注释掉这行，暂时不用它
 
 class GameManager:
     def __init__(self):
         self.is_running = True
         
-        # 【核心】全局难度等级 (索引 0-9)
-        # 默认为 0，之后由 EyesightGame 修改
-        self.difficulty = 0 
+        # 默认难度设为字符串 key
+        self.difficulty = 'EASY' 
         
-        # 场景占位，等下具体实现文件写好了再填
         self.scenes = {} 
         self.current_scene = None
 
     def load_scenes(self):
-        """为了解决循环导入问题，建议单独写个方法加载场景"""
+        # 重新导入以避免循环依赖
         from games.main_menu import MainMenu
         from games.snake.game import SnakeGame
-        from games.eyesight.game import EyesightGame
+        # from games.eyesight.game import EyesightGame <--- 【修改2】注释掉这行
         
         self.scenes = {
-            'eyesight': EyesightGame(self),
+            # 'eyesight': EyesightGame(self),          <--- 【修改3】注释掉这行，不初始化它
             'menu': MainMenu(self),
             'snake': SnakeGame(self)
         }
-        # 游戏启动默认进入视力测试
-        self.current_scene = self.scenes['eyesight']
+        
+        # 【修改4】将入口场景强制设为主菜单
+        self.current_scene = self.scenes['menu']
 
     def change_scene(self, scene_name):
         if scene_name in self.scenes:
             self.current_scene = self.scenes[scene_name]
-            # 如果进入贪吃蛇，可能需要根据新难度重置一下
+            # 如果场景有 reset_game 方法，切换时重置一下（比如贪吃蛇）
             if hasattr(self.current_scene, 'reset_game'):
                 self.current_scene.reset_game()
+        else:
+            print(f"Error: Scene '{scene_name}' not found.")
 
     def handle_input(self, event):
         if self.current_scene:

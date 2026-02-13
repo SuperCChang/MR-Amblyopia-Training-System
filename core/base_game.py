@@ -28,20 +28,17 @@ class BaseGame:
             # print(f"Background switched to: {self.bg_mode}")
 
     def draw(self, surface):
-        # 获取当前难度参数
-        current_diff = self.app.difficulty
-        settings = DIFFICULTY_LEVELS[current_diff]
+        # 获取难度 key
+        diff_key = self.app.difficulty
+        # 从字典中取配置
+        settings_data = DIFFICULTY_LEVELS[diff_key]
         
-        # 提取独立的变量
-        g_size = settings['bg_grid_size']      # 用于网格背景
-        s_width = settings['stripe_width']  # 用于条栅背景
+        bg_g_size = settings_data['bg_grid_size']
+        s_width = settings_data['stripe_width']
         
         current_time = pygame.time.get_ticks()
+        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width)
         
-        # 渲染背景
-        BackgroundRenderer.draw(surface, self.bg_mode, current_time, g_size, s_width)
-        
-        # 渲染子类内容
         self.draw_content(surface)
 
     def draw_content(self, surface):

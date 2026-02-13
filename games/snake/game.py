@@ -1,9 +1,9 @@
 import pygame
 import random
 import os
-import math
+import settings
 from core.base_game import BaseGame
-from settings import COLORS, SCREEN_WIDTH, SCREEN_HEIGHT, DIFFICULTY_LEVELS
+from settings import COLORS, DIFFICULTY_LEVELS, GAME_GRID_RATIO
 
 class SnakeGame(BaseGame):
     def __init__(self, app):
@@ -34,42 +34,53 @@ class SnakeGame(BaseGame):
         self.reset_game()
 
     def reset_game(self):
-        diff_index = self.app.difficulty
-        settings = DIFFICULTY_LEVELS[diff_index]
+        # 1. 获取选定的难度配置
+        # self.app.difficulty 现在是字符串 'EASY', 'MEDIUM' 等
+        diff_key = self.app.difficulty 
+        diff_settings = DIFFICULTY_LEVELS[diff_key]
         
-        self.game_grid_size = settings['game_grid_size']
-        self.move_interval = settings['snake_speed']
+        # 2. 设置移动速度 (由难度决定)
+        self.move_interval = diff_settings['snake_speed']
         
-        # --- 图片缩放 ---
-        if self.images_loaded:
-            self.img_head = pygame.transform.scale(self.raw_head, (self.game_grid_size, self.game_grid_size))
-            self.img_body = pygame.transform.scale(self.raw_body, (self.game_grid_size, self.game_grid_size))
-            self.img_corner = pygame.transform.scale(self.raw_corner, (self.game_grid_size, self.game_grid_size))
-            self.img_tail = pygame.transform.scale(self.raw_tail, (self.game_grid_size, self.game_grid_size))
-            self.img_food = pygame.transform.scale(self.raw_food, (self.game_grid_size, self.game_grid_size))
+        # 3. 【核心修改】计算游戏网格大小 (由屏幕大小决定)
+        # 这样无论分辨率是多少，蛇相对于屏幕的比例是固定的
+        self.grid_size = settings.SCREEN_WIDTH // GAME_GRID_RATIO
+        
+        # 确保 grid_size 至少是 20，防止过小
+        self.grid_size = max(20, self.grid_size)
 
-        # 初始化蛇
-        start_x = (SCREEN_WIDTH // self.game_grid_size // 2) * self.game_grid_size
-        start_y = (SCREEN_HEIGHT // self.game_grid_size // 2) * self.game_grid_size
+        print(f"Game Grid Size: {self.grid_size}px (Screen: {settings.SCREEN_WIDTH}x{settings.SCREEN_HEIGHT})")
+
+        # --- 图片缩放 (代码逻辑不变，但使用的是新计算的 self.grid_size) ---
+        if self.images_loaded:
+            self.img_head = pygame.transform.scale(self.raw_head, (self.grid_size, self.grid_size))
+            self.img_body = pygame.transform.scale(self.raw_body, (self.grid_size, self.grid_size))
+            if hasattr(self, 'raw_tail'):
+                self.img_tail = pygame.transform.scale(self.raw_tail, (self.grid_size, self.grid_size))
+            if hasattr(self, 'raw_corner'):
+                self.img_corner = pygame.transform.scale(self.raw_corner, (self.grid_size, self.grid_size))
+            self.img_food = pygame.transform.scale(self.raw_food, (self.grid_size, self.grid_size))
+
+        # --- 初始位置 (使用 settings.SCREEN_WIDTH) ---
+        start_x = (settings.SCREEN_WIDTH // self.grid_size // 2) * self.grid_size
+        start_y = (settings.SCREEN_HEIGHT // self.grid_size // 2) * self.grid_size
         
-        # 初始长度至少为3，才能明显看到头、身、尾
         self.snake = [
             (start_x, start_y),
-            (start_x - self.game_grid_size, start_y),
-            (start_x - 2 * self.game_grid_size, start_y)
+            (start_x - self.grid_size, start_y),
+            (start_x - 2 * self.grid_size, start_y)
         ]
         self.direction = (1, 0)
         self.score = 0
         self.move_timer = 0
         
-        # 3 个苹果
         self.foods = []
         for _ in range(3):
             self._add_new_food()
 
     def _add_new_food(self):
-        cols = SCREEN_WIDTH // self.game_grid_size
-        rows = SCREEN_HEIGHT // self.game_grid_size
+        cols = settings.SCREEN_WIDTH // self.grid_size
+        rows = settings.SCREEN_HEIGHT // self.grid_size
         while True:
             x = random.randint(0, cols - 1) * self.game_grid_size
             y = random.randint(0, rows - 1) * self.game_grid_size
@@ -108,8 +119,8 @@ class SnakeGame(BaseGame):
         head_x, head_y = self.snake[0]
         dx, dy = self.direction
         
-        new_x = (head_x + dx * self.game_grid_size) % SCREEN_WIDTH
-        new_y = (head_y + dy * self.game_grid_size) % SCREEN_HEIGHT
+        new_x = (head_x + dx * self.grid_size) % settings.SCREEN_WIDTH
+        new_y = (head_y + dy * self.grid_size) % settings.SCREEN_HEIGHT
         new_head = (new_x, new_y)
 
         if new_head in self.snake:
