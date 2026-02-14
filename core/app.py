@@ -4,7 +4,8 @@ from settings import COLORS
 # 引入具体场景
 from games.main_menu import MainMenu
 from games.snake.game import SnakeGame
-# from games.eyesight.game import EyesightGame  <--- 【修改1】注释掉这行，暂时不用它
+from games.login_scene import LoginScene
+# from games.eyesight.game import EyesightGame 
 
 class GameManager:
     def __init__(self):
@@ -21,19 +22,18 @@ class GameManager:
         self.font_fps = pygame.font.SysFont("arial", 20, bold=True)
 
     def load_scenes(self):
-        # 重新导入以避免循环依赖
         from games.main_menu import MainMenu
         from games.snake.game import SnakeGame
-        # from games.eyesight.game import EyesightGame <--- 【修改2】注释掉这行
+        from games.login_scene import LoginScene # 确保导入
         
         self.scenes = {
-            # 'eyesight': EyesightGame(self),          <--- 【修改3】注释掉这行，不初始化它
+            'login': LoginScene(self), # 注册登录场景
             'menu': MainMenu(self),
             'snake': SnakeGame(self)
         }
         
-        # 【修改4】将入口场景强制设为主菜单
-        self.current_scene = self.scenes['menu']
+        # 【关键修改】入口改为登录界面
+        self.current_scene = self.scenes['login']
 
     def change_scene(self, scene_name):
         if scene_name in self.scenes:

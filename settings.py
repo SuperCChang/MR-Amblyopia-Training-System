@@ -29,11 +29,15 @@ COLORS = {
 
 # --- 难度配置表 (只控制背景和速度) ---
 DIFFICULTY_LEVELS = {
-    'EASY':   {'bg_grid_size': 100, 'stripe_width': 40, 'snake_speed': 250, 'snake_size': 20},
-    'MEDIUM': {'bg_grid_size': 50, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 30},
-    'HARD':   {'bg_grid_size': 20,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 40},
+    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 10},
+    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 15},
+    'HARD':   {'bg_grid_size': 15,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 20},
 }
 
 TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
 SPEED_ACCELERATION = 5       # 每吃一个苹果，蛇移动间隔减少多少毫秒
 MIN_MOVE_INTERVAL = 40       # 速度上限
+
+SUPABASE_URL = "https://ztljczelgprcymxwqywp.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0bGpjemVsZ3ByY3lteHdxeXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMDUyOTgsImV4cCI6MjA4NjU4MTI5OH0.3PdvN9-L8w4vKQqKRPNwun3VSN5L0Ef-wUbB21e5ToA"
+PLAYER_NAME = "MyPlayer1"

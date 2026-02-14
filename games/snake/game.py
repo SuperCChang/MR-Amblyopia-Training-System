@@ -3,6 +3,7 @@ import random
 import os
 import settings
 from core.base_game import BaseGame
+from core.data_manager import DataManager
 from settings import COLORS, DIFFICULTY_LEVELS, GAME_GRID_RATIO
 
 class SnakeGame(BaseGame):
@@ -62,6 +63,12 @@ class SnakeGame(BaseGame):
 
     def reset_game(self):
         """蛇死亡或重新开始时调用"""
+        if self.current_score > 0:
+            coins_earned = self.current_score // 10 # 整除10
+            if coins_earned > 0:
+                print(f"Game Over! You earned {coins_earned} coins.")
+                # 调用单例增加金币
+                DataManager().add_coins(coins_earned)
         
         # 【修改】最高分更新逻辑：
         # 如果死掉的时候分数比最高分高，更新一下（双重保险）

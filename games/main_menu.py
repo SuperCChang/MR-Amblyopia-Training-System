@@ -3,6 +3,7 @@ import pygame
 import settings # 注意：这里我们要直接导入模块，以便访问动态更新后的宽高
 from core.base_game import BaseGame
 from core.ui import Button
+from core.data_manager import DataManager
 from settings import COLORS, DIFFICULTY_LEVELS
 
 class MainMenu(BaseGame):
@@ -92,3 +93,10 @@ class MainMenu(BaseGame):
         btns = self.btns_game if self.state == "选择游戏" else self.btns_diff
         for btn in btns:
             btn.draw(surface)
+
+        coins = DataManager().get_coins()
+        coin_text = f"Coins: {coins}"
+        # 用黄色显示
+        coin_surf = self.font_btn.render(coin_text, True, (255, 215, 0)) 
+        # 显示在右上角
+        surface.blit(coin_surf, (settings.SCREEN_WIDTH - coin_surf.get_width() - 20, 20))
