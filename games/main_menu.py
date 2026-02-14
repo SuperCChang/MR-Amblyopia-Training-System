@@ -8,11 +8,11 @@ from settings import COLORS, DIFFICULTY_LEVELS
 class MainMenu(BaseGame):
     def __init__(self, app):
         super().__init__(app)
-        self.font_title = pygame.font.SysFont("arial", 80, bold=True)
-        self.font_btn = pygame.font.SysFont("arial", 40)
+        self.font_title = pygame.font.SysFont("microsoftyahei", 80, bold=True)
+        self.font_btn = pygame.font.SysFont("microsoftyahei", 40)
         
-        # 菜单状态: "SELECT_GAME" 或 "SELECT_DIFFICULTY"
-        self.state = "SELECT_GAME" 
+        # 菜单状态: "选择游戏" 或 "选择难度"
+        self.state = "选择游戏" 
         self.selected_game = None # 暂存用户选了哪个游戏
         
         # 初始化按钮 (位置稍后在 update_layout 里设置)
@@ -28,34 +28,34 @@ class MainMenu(BaseGame):
 
         # --- 游戏选择界面的按钮 ---
         self.btns_game = [
-            Button(cx - w//2, cy - gap, w, h, "Play Snake", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, cy + 20, w, h, "Exit", self.font_btn, bg_color=COLORS['red'])
+            Button(cx - w//2, cy - gap, w, h, "贪吃蛇", self.font_btn, bg_color=COLORS['green']),
+            Button(cx - w//2, cy + 20, w, h, "退出游戏", self.font_btn, bg_color=COLORS['red'])
         ]
 
         # --- 难度选择界面的按钮 ---
         self.btns_diff = [
-            Button(cx - w//2, cy - gap, w, h, "EASY", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, cy, w, h, "MEDIUM", self.font_btn, bg_color=COLORS['yellow']),
-            Button(cx - w//2, cy + gap, w, h, "HARD", self.font_btn, bg_color=COLORS['red']),
+            Button(cx - w//2, cy - gap, w, h, "简单", self.font_btn, bg_color=COLORS['green']),
+            Button(cx - w//2, cy, w, h, "中等", self.font_btn, bg_color=COLORS['yellow']),
+            Button(cx - w//2, cy + gap, w, h, "困难", self.font_btn, bg_color=COLORS['red']),
         ]
 
     def handle_input(self, event):
         # 菜单里不需要通用的 Tab 切背景逻辑，所以不调 super
         
         if event.type == pygame.MOUSEMOTION:
-            btns = self.btns_game if self.state == "SELECT_GAME" else self.btns_diff
+            btns = self.btns_game if self.state == "选择游戏" else self.btns_diff
             for btn in btns:
                 btn.check_hover(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.state == "SELECT_GAME":
+            if self.state == "选择游戏":
                 if self.btns_game[0].is_clicked(event): # Snake
                     self.selected_game = 'snake'
-                    self.state = "SELECT_DIFFICULTY"
+                    self.state = "选择难度"
                 elif self.btns_game[1].is_clicked(event): # Exit
                     self.app.is_running = False
             
-            elif self.state == "SELECT_DIFFICULTY":
+            elif self.state == "选择难度":
                 # 点击难度后，设置 app.difficulty，并启动游戏
                 if self.btns_diff[0].is_clicked(event): self.start_game('EASY')
                 elif self.btns_diff[1].is_clicked(event): self.start_game('MEDIUM')
@@ -63,14 +63,14 @@ class MainMenu(BaseGame):
         
         # 允许按 ESC 返回上一级
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            if self.state == "SELECT_DIFFICULTY":
-                self.state = "SELECT_GAME"
+            if self.state == "选择难度":
+                self.state = "选择游戏"
 
     def start_game(self, diff_key):
         """设置难度并跳转"""
         self.app.difficulty = diff_key # 这里存的是字符串 'EASY', 'MEDIUM' 等
         self.app.change_scene(self.selected_game)
-        self.state = "SELECT_GAME" # 重置状态以便下次回来
+        self.state = "选择游戏" # 重置状态以便下次回来
 
     def update(self, dt):
         # 菜单不需要更新逻辑，但如果按钮位置不对(比如刚启动)，可以刷新一下
@@ -83,12 +83,12 @@ class MainMenu(BaseGame):
         surface.fill(COLORS['menu_bg'])
         
         # 2. 绘制标题
-        title_text = "GAME STATION" if self.state == "SELECT_GAME" else "SELECT DIFFICULTY"
+        title_text = "GAME STATION" if self.state == "选择游戏" else "选择难度"
         title_surf = self.font_title.render(title_text, True, COLORS['white'])
         title_rect = title_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, 100))
         surface.blit(title_surf, title_rect)
 
         # 3. 绘制当前状态的按钮
-        btns = self.btns_game if self.state == "SELECT_GAME" else self.btns_diff
+        btns = self.btns_game if self.state == "选择游戏" else self.btns_diff
         for btn in btns:
             btn.draw(surface)

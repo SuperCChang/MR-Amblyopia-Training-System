@@ -23,7 +23,7 @@ def main():
     settings.SCREEN_HEIGHT = actual_h
     
     pygame.display.set_caption(settings.WINDOW_TITLE)
-    clock = pygame.time.Clock()
+    # clock = pygame.time.Clock()
 
     game_manager = GameManager()
     # 确保在屏幕尺寸更新后再加载场景 (这样主菜单的按钮位置才能算对)
@@ -33,7 +33,7 @@ def main():
     game_manager.difficulty = 'EASY'
 
     while game_manager.is_running:
-        dt = clock.tick(settings.FPS)
+        dt = game_manager.clock.tick(settings.FPS)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

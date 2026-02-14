@@ -12,7 +12,7 @@ WINDOW_TITLE = "Python Game Collection"
 # --- 游戏参数 ---
 # 蛇的大小 = 屏幕宽度 / 这个比例
 # 例如屏幕宽 1920，比例 40，那么蛇就是 48px
-GAME_GRID_RATIO = 40 
+GAME_GRID_RATIO = 20 
 
 # --- 颜色定义 ---
 COLORS = {
@@ -29,7 +29,11 @@ COLORS = {
 
 # --- 难度配置表 (只控制背景和速度) ---
 DIFFICULTY_LEVELS = {
-    'EASY':   {'bg_grid_size': 200, 'stripe_width': 150, 'snake_speed': 250},
-    'MEDIUM': {'bg_grid_size': 100, 'stripe_width': 80,  'snake_speed': 150},
-    'HARD':   {'bg_grid_size': 40,  'stripe_width': 20,  'snake_speed': 80},
+    'EASY':   {'bg_grid_size': 100, 'stripe_width': 40, 'snake_speed': 250, 'snake_size': 20},
+    'MEDIUM': {'bg_grid_size': 50, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 30},
+    'HARD':   {'bg_grid_size': 20,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 40},
 }
+
+TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
+SPEED_ACCELERATION = 5       # 每吃一个苹果，蛇移动间隔减少多少毫秒
+MIN_MOVE_INTERVAL = 40       # 速度上限
