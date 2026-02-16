@@ -28,16 +28,22 @@ class MainMenu(BaseGame):
         gap = 100
 
         # --- 游戏选择界面的按钮 ---
-        self.btns_game = [
-            Button(cx - w//2, cy - gap, w, h, "贪吃蛇", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, cy + 20, w, h, "退出游戏", self.font_btn, bg_color=COLORS['red'])
-        ]
+        # self.btns_game = [
+            # Button(cx - w//2, cy - gap, w, h, "贪吃蛇", self.font_btn, bg_color=COLORS['green']),
+            # Button(cx - w//2, cy + 20, w, h, "退出游戏", self.font_btn, bg_color=COLORS['red'])
+        # ]
 
         # --- 难度选择界面的按钮 ---
         self.btns_diff = [
             Button(cx - w//2, cy - gap, w, h, "简单", self.font_btn, bg_color=COLORS['green']),
             Button(cx - w//2, cy, w, h, "中等", self.font_btn, bg_color=COLORS['yellow']),
             Button(cx - w//2, cy + gap, w, h, "困难", self.font_btn, bg_color=COLORS['red']),
+        ]
+
+        self.btns_game = [
+            Button(cx - w//2, cy - gap, w, h, "开始贪吃蛇", self.font_btn, bg_color=COLORS['green']),
+            Button(cx - w//2, cy + 10, w, h, "我的宠物", self.font_btn, bg_color=COLORS['yellow']), # 新增
+            Button(cx - w//2, cy + 120, w, h, "退出", self.font_btn, bg_color=COLORS['red'])
         ]
 
     def handle_input(self, event):
@@ -66,6 +72,9 @@ class MainMenu(BaseGame):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             if self.state == "选择难度":
                 self.state = "选择游戏"
+        
+        if self.btns_game[1].is_clicked(event): # 我的宠物
+            self.app.change_scene('pet')
 
     def start_game(self, diff_key):
         """设置难度并跳转"""

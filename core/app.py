@@ -5,6 +5,7 @@ from settings import COLORS
 from games.main_menu import MainMenu
 from games.snake.game import SnakeGame
 from games.login_scene import LoginScene
+from games.pet.scene import PetScene
 # from games.eyesight.game import EyesightGame 
 
 class GameManager:
@@ -29,7 +30,8 @@ class GameManager:
         self.scenes = {
             'login': LoginScene(self), # 注册登录场景
             'menu': MainMenu(self),
-            'snake': SnakeGame(self)
+            'snake': SnakeGame(self),
+            'pet': PetScene(self)
         }
         
         # 【关键修改】入口改为登录界面
@@ -38,11 +40,11 @@ class GameManager:
     def change_scene(self, scene_name):
         if scene_name in self.scenes:
             self.current_scene = self.scenes[scene_name]
-            # 如果场景有 reset_game 方法，切换时重置一下（比如贪吃蛇）
-            if hasattr(self.current_scene, 'reset_game'):
-                self.current_scene.reset_game()
+            
+            if hasattr(self.current_scene, 'on_enter'):
+                self.current_scene.on_enter()
         else:
-            print(f"Error: Scene '{scene_name}' not found.")
+            print(f"Error: Scene {scene_name} not found!")
 
     def handle_input(self, event):
         if self.current_scene:

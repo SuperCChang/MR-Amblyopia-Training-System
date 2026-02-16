@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from supabase import create_client, Client
 import settings
+import random
 
 class DataManager:
     _instance = None
@@ -17,10 +18,12 @@ class DataManager:
             cls._instance.is_connected = False
             # 默认宠物数据结构
             cls._instance.default_pet = {
-                "hunger": 100,      # 饱食度 0-100
-                "mood": 100,        # 心情 0-100
+                "type": None,       # 'cat' 或 'dog'，None表示未领养
+                "hunger": 100,      # 饱食度
+                "health": 100,      # 健康度
+                "mood": 100,        # 心情
                 "is_sick": False,   # 是否生病
-                "last_update": 0    # 上次存档的时间戳
+                "last_update": 0    # 时间戳
             }
         return cls._instance
 
@@ -144,4 +147,7 @@ class DataManager:
             self.sync_data()
             
     def get_pet(self):
+        if not self.user_data:
+            return self.default_pet
+        # 如果已登录，正常获取
         return self.user_data.get('pet_data', self.default_pet)

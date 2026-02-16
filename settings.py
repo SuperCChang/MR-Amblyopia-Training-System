@@ -41,3 +41,20 @@ MIN_MOVE_INTERVAL = 40       # 速度上限
 SUPABASE_URL = "https://ztljczelgprcymxwqywp.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0bGpjemVsZ3ByY3lteHdxeXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMDUyOTgsImV4cCI6MjA4NjU4MTI5OH0.3PdvN9-L8w4vKQqKRPNwun3VSN5L0Ef-wUbB21e5ToA"
 PLAYER_NAME = "MyPlayer1"
+
+PET_CONFIG = {
+    'decay_interval': 3600,   # 离线结算周期 (秒)
+    'hunger_decay': 10,       # 每周期掉多少饱食度
+    'mood_decay': 5,          # 每周期掉多少心情
+    'sick_chance': 0.1,       # 每周期生病概率
+    
+    # 商店价格与效果
+    'food_price': 10,
+    'food_effect': 30,
+    
+    'med_price': 50,
+    'med_effect': 100,
+    
+    'toy_price': 20,
+    'toy_effect': 20
+}

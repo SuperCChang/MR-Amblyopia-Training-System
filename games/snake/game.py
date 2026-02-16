@@ -63,34 +63,40 @@ class SnakeGame(BaseGame):
 
     def reset_game(self):
         """蛇死亡或重新开始时调用"""
-        if self.current_score > 0:
-            coins_earned = self.current_score // 10 # 整除10
-            if coins_earned > 0:
-                print(f"Game Over! You earned {coins_earned} coins.")
-                # 调用单例增加金币
-                DataManager().add_coins(coins_earned)
         
-        # 【修改】最高分更新逻辑：
-        # 如果死掉的时候分数比最高分高，更新一下（双重保险）
+        # 1. 更新最高分逻辑
         if self.current_score > self.high_score:
             self.high_score = self.current_score
-            
-        # 重置当前分
+        
+        if self.current_score > 0:
+            coins_earned = self.current_score
+            if coins_earned > 0:
+                DataManager().add_coins(coins_earned)    
+        
+        # 2. 重置当前分
         self.current_score = 0
         
-        # 读取配置
+        # 3. 读取配置
         diff_key = self.app.difficulty 
         diff_settings = DIFFICULTY_LEVELS[diff_key]
         
-        # 速度设置
+        # 4. 速度设置
         self.base_speed = diff_settings['snake_speed']
         self.move_interval = self.base_speed
         
-        # 尺寸设置
-        self.grid_size = settings.SCREEN_WIDTH // diff_settings['snake_size']
+        # 5. 【第一步】计算基础网格大小
+        self.grid_size = settings.SCREEN_WIDTH // GAME_GRID_RATIO
         self.grid_size = max(20, self.grid_size)
 
-        # 图片缩放
+        # 6. 【第二步】核心修复：计算行数和列数 (必须在这里定义 self.cols)
+        self.cols = settings.SCREEN_WIDTH // self.grid_size
+        self.rows = settings.SCREEN_HEIGHT // self.grid_size
+        
+        # 7. 【第三步】计算有效游戏区域宽高 (依赖上面的 cols 和 rows)
+        self.play_width = self.cols * self.grid_size
+        self.play_height = self.rows * self.grid_size
+
+        # 8. 图片缩放
         if self.images_loaded:
             self.img_head = pygame.transform.scale(self.raw_head, (self.grid_size, self.grid_size))
             self.img_body = pygame.transform.scale(self.raw_body, (self.grid_size, self.grid_size))
@@ -100,9 +106,9 @@ class SnakeGame(BaseGame):
                 self.img_corner = pygame.transform.scale(self.raw_corner, (self.grid_size, self.grid_size))
             self.img_food = pygame.transform.scale(self.raw_food, (self.grid_size, self.grid_size))
 
-        # 蛇的位置
-        start_x = (settings.SCREEN_WIDTH // self.grid_size // 2) * self.grid_size
-        start_y = (settings.SCREEN_HEIGHT // self.grid_size // 2) * self.grid_size
+        # 9. 蛇的初始位置 (居中)
+        start_x = (self.cols // 2) * self.grid_size
+        start_y = (self.rows // 2) * self.grid_size
         
         self.snake = [
             (start_x, start_y),
@@ -112,16 +118,16 @@ class SnakeGame(BaseGame):
         self.direction = (1, 0)
         self.move_timer = 0
         
+        # 10. 生成食物
         self.foods = []
         for _ in range(3):
             self._add_new_food()
 
     def _add_new_food(self):
-        cols = settings.SCREEN_WIDTH // self.grid_size
-        rows = settings.SCREEN_HEIGHT // self.grid_size
+        # 直接使用 reset_game 里算好的 cols 和 rows
         while True:
-            x = random.randint(0, cols - 1) * self.grid_size
-            y = random.randint(0, rows - 1) * self.grid_size
+            x = random.randint(0, self.cols - 1) * self.grid_size
+            y = random.randint(0, self.rows - 1) * self.grid_size
             pos = (x, y)
             if pos not in self.snake and pos not in self.foods:
                 self.foods.append(pos)
@@ -164,8 +170,8 @@ class SnakeGame(BaseGame):
         head_x, head_y = self.snake[0]
         dx, dy = self.direction
         
-        new_x = (head_x + dx * self.grid_size) % settings.SCREEN_WIDTH
-        new_y = (head_y + dy * self.grid_size) % settings.SCREEN_HEIGHT
+        new_x = (head_x + dx * self.grid_size) % self.play_width
+        new_y = (head_y + dy * self.grid_size) % self.play_height
         new_head = (new_x, new_y)
 
         # 撞到自己
@@ -192,10 +198,12 @@ class SnakeGame(BaseGame):
         dx = target[0] - current[0]
         dy = target[1] - current[1]
         
-        if dx > settings.SCREEN_WIDTH / 2: dx = -self.grid_size
-        elif dx < -settings.SCREEN_WIDTH / 2: dx = self.grid_size
-        if dy > settings.SCREEN_HEIGHT / 2: dy = -self.grid_size
-        elif dy < -settings.SCREEN_HEIGHT / 2: dy = self.grid_size
+        # 使用 play_width / 2 而不是 SCREEN_WIDTH / 2
+        if dx > self.play_width / 2: dx = -self.grid_size
+        elif dx < -self.play_width / 2: dx = self.grid_size
+        
+        if dy > self.play_height / 2: dy = -self.grid_size
+        elif dy < -self.play_height / 2: dy = self.grid_size
 
         if dx != 0: dx = dx // abs(dx)
         if dy != 0: dy = dy // abs(dy)
