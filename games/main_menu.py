@@ -1,111 +1,155 @@
 # games/main_menu.py
-import pygame
-import settings # 注意：这里我们要直接导入模块，以便访问动态更新后的宽高
+import pygame, os
 from core.base_game import BaseGame
 from core.ui import Button
+import settings
+from settings import COLORS
 from core.data_manager import DataManager
-from settings import COLORS, DIFFICULTY_LEVELS
+from core.path_utils import resource_path
 
 class MainMenu(BaseGame):
     def __init__(self, app):
         super().__init__(app)
-        self.font_title = pygame.font.SysFont("microsoftyahei", 80, bold=True)
-        self.font_btn = pygame.font.SysFont("microsoftyahei", 40)
         
-        # 菜单状态: "选择游戏" 或 "选择难度"
-        self.state = "选择游戏" 
-        self.selected_game = None # 暂存用户选了哪个游戏
+        self.font_title = pygame.font.SysFont("simhei", 60, bold=True)
+        self.font_btn = pygame.font.SysFont("simhei", 30)
         
-        # 初始化按钮 (位置稍后在 update_layout 里设置)
-        self.buttons = {}
-        self.update_layout()
+        self.menu_state = 'ROOT'
+        self.init_buttons()
+        
+        # 【新增】加载背景图片
+        self.bg_image = None
+        self._load_bg()
+    
+    def _load_bg(self):
+        try:
+            path = resource_path(os.path.join('assets', 'images', 'menu_bg.png'))
+            if os.path.exists(path):
+                raw = pygame.image.load(path).convert()
+                # 缩放到屏幕大小
+                self.bg_image = pygame.transform.scale(raw, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+                print("Background image loaded.")
+        except Exception as e:
+            print(f"BG Load Error: {e}")
 
-    def update_layout(self):
-        """根据屏幕大小重新计算按钮位置"""
+    def init_buttons(self):
         cx = settings.SCREEN_WIDTH // 2
         cy = settings.SCREEN_HEIGHT // 2
-        w, h = 300, 80
-        gap = 100
-
-        # --- 游戏选择界面的按钮 ---
-        # self.btns_game = [
-            # Button(cx - w//2, cy - gap, w, h, "贪吃蛇", self.font_btn, bg_color=COLORS['green']),
-            # Button(cx - w//2, cy + 20, w, h, "退出游戏", self.font_btn, bg_color=COLORS['red'])
-        # ]
-
-        # --- 难度选择界面的按钮 ---
-        self.btns_diff = [
-            Button(cx - w//2, cy - gap, w, h, "简单", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, cy, w, h, "中等", self.font_btn, bg_color=COLORS['yellow']),
-            Button(cx - w//2, cy + gap, w, h, "困难", self.font_btn, bg_color=COLORS['red']),
+        w, h = 240, 60
+        gap = 80
+        
+        self.title_y = cy - 200
+        
+        # --- 状态 1: 主菜单按钮 ---
+        # 包含：贪吃蛇入口、宠物入口、退出
+        self.btns_root = [
+            Button(cx - w//2, cy - gap, w, h, "贪吃蛇训练", self.font_btn, bg_color=COLORS['blue']),
+            Button(cx - w//2, cy + 10, w, h, "宠物乐园", self.font_btn, bg_color=COLORS['yellow']),
+            Button(cx - w//2, cy + 120, w, h, "退出系统", self.font_btn, bg_color=COLORS['red'])
         ]
-
-        self.btns_game = [
-            Button(cx - w//2, cy - gap, w, h, "开始贪吃蛇", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, cy + 10, w, h, "我的宠物", self.font_btn, bg_color=COLORS['yellow']), # 新增
-            Button(cx - w//2, cy + 120, w, h, "退出", self.font_btn, bg_color=COLORS['red'])
+        
+        # --- 状态 2: 贪吃蛇难度选择按钮 ---
+        # 包含：简单、中等、困难、返回
+        self.btns_diff = [
+            Button(cx - w//2, cy - gap - 40, w, h, "简单模式", self.font_btn, bg_color=COLORS['green']),
+            Button(cx - w//2, cy + 10 - 40, w, h, "中等模式", self.font_btn, bg_color=COLORS['yellow']),
+            Button(cx - w//2, cy + 120 - 40, w, h, "困难模式", self.font_btn, bg_color=COLORS['red']),
+            Button(cx - w//2, cy + 200, w, h, "返回上一级", self.font_btn, bg_color=COLORS['grey'])
         ]
 
     def handle_input(self, event):
-        # 菜单里不需要通用的 Tab 切背景逻辑，所以不调 super
+        # 根据当前状态，决定检查哪组按钮
+        current_btns = self.btns_root if self.menu_state == 'ROOT' else self.btns_diff
         
+        # 1. 鼠标悬停处理
         if event.type == pygame.MOUSEMOTION:
-            btns = self.btns_game if self.state == "选择游戏" else self.btns_diff
-            for btn in btns:
+            for btn in current_btns:
                 btn.check_hover(event.pos)
-
+                
+        # 2. 鼠标点击处理
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.state == "选择游戏":
-                if self.btns_game[0].is_clicked(event): # Snake
-                    self.selected_game = 'snake'
-                    self.state = "选择难度"
-                elif self.btns_game[1].is_clicked(event): # Exit
+            # === 主菜单逻辑 ===
+            if self.menu_state == 'ROOT':
+                if self.btns_root[0].is_clicked(event):   # 贪吃蛇训练
+                    print("选择贪吃蛇，进入难度选择")
+                    self.menu_state = 'SNAKE_DIFF' # 切换状态
+                    # 可以在这里做个防误触，清空一下事件
+                    pygame.event.clear()
+                    
+                elif self.btns_root[1].is_clicked(event): # 宠物乐园
+                    self.app.change_scene('pet')
+                    
+                elif self.btns_root[2].is_clicked(event): # 退出
                     self.app.is_running = False
-            
-            elif self.state == "选择难度":
-                # 点击难度后，设置 app.difficulty，并启动游戏
-                if self.btns_diff[0].is_clicked(event): self.start_game('EASY')
-                elif self.btns_diff[1].is_clicked(event): self.start_game('MEDIUM')
-                elif self.btns_diff[2].is_clicked(event): self.start_game('HARD')
-        
-        # 允许按 ESC 返回上一级
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            if self.state == "选择难度":
-                self.state = "选择游戏"
-        
-        if self.btns_game[1].is_clicked(event): # 我的宠物
-            self.app.change_scene('pet')
 
-    def start_game(self, diff_key):
-        """设置难度并跳转"""
-        self.app.difficulty = diff_key # 这里存的是字符串 'EASY', 'MEDIUM' 等
-        self.app.change_scene(self.selected_game)
-        self.state = "选择游戏" # 重置状态以便下次回来
+            # === 难度选择逻辑 ===
+            elif self.menu_state == 'SNAKE_DIFF':
+                if self.btns_diff[0].is_clicked(event):   # 简单
+                    self._start_snake('EASY')
+                elif self.btns_diff[1].is_clicked(event): # 中等
+                    self._start_snake('MEDIUM')
+                elif self.btns_diff[2].is_clicked(event): # 困难
+                    self._start_snake('HARD')
+                elif self.btns_diff[3].is_clicked(event): # 返回
+                    self.menu_state = 'ROOT'
+
+    def _start_snake(self, difficulty):
+        """设置难度并开始游戏"""
+        self.app.difficulty = difficulty
+        print(f"Difficulty set to {difficulty}, starting game...")
+        self.app.change_scene('snake')
+        # 重置菜单状态，这样下次回来还是主页
+        self.menu_state = 'ROOT'
 
     def update(self, dt):
-        # 菜单不需要更新逻辑，但如果按钮位置不对(比如刚启动)，可以刷新一下
-        # 这里为了简单，每次绘制前确保 layout 是对的
-        pass
+        super().update(dt) # 动态背景
 
     def draw(self, surface):
-        """【覆盖父类】完全独立的绘制逻辑"""
-        # 1. 绘制独立背景
-        surface.fill(COLORS['menu_bg'])
+        # 1. 【修改】绘制背景
+        if self.bg_image:
+            surface.blit(self.bg_image, (0, 0))
+        else:
+            # 如果没有图片，用原来的深色背景
+            surface.fill(COLORS['menu_bg'])
+            super().draw(surface) # 或者是动态背景
+
+        # 为了让文字在花哨的背景上也能看清，我们可以加一个全屏的半透明黑色遮罩
+        # 或者只在按钮区域加面板。这里简单点，加个轻微的暗角。
+        mask = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        mask.set_alpha(50) # 透明度
+        mask.fill((0,0,0))
+        surface.blit(mask, (0,0))
+
+        cx = settings.SCREEN_WIDTH // 2
         
-        # 2. 绘制标题
-        title_text = "GAME STATION" if self.state == "选择游戏" else "选择难度"
-        title_surf = self.font_title.render(title_text, True, COLORS['white'])
-        title_rect = title_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, 100))
-        surface.blit(title_surf, title_rect)
-
-        # 3. 绘制当前状态的按钮
-        btns = self.btns_game if self.state == "选择游戏" else self.btns_diff
-        for btn in btns:
-            btn.draw(surface)
-
+        # 2. 绘制顶部信息栏 (增加一个黑底条，防止看不清)
+        top_bar = pygame.Surface((settings.SCREEN_WIDTH, 60))
+        top_bar.set_alpha(150)
+        top_bar.fill((0,0,0))
+        surface.blit(top_bar, (0,0))
+        
         coins = DataManager().get_coins()
-        coin_text = f"Coins: {coins}"
-        # 用黄色显示
-        coin_surf = self.font_btn.render(coin_text, True, (255, 215, 0)) 
-        # 显示在右上角
-        surface.blit(coin_surf, (settings.SCREEN_WIDTH - coin_surf.get_width() - 20, 20))
+        coin_surf = self.font_btn.render(f"金币: {coins}", True, COLORS['yellow'])
+        surface.blit(coin_surf, (settings.SCREEN_WIDTH - 200, 15))
+
+        # 3. 绘制内容
+        if self.menu_state == 'ROOT':
+            # 给标题加个阴影
+            title_str = "训练项目选择"
+            title = self.font_title.render(title_str, True, COLORS['white'])
+            shadow = self.font_title.render(title_str, True, (0,0,0))
+            
+            rect = title.get_rect(center=(cx, self.title_y))
+            surface.blit(shadow, (rect.x+2, rect.y+2)) # 阴影偏移
+            surface.blit(title, rect)
+            
+            for btn in self.btns_root:
+                btn.draw(surface)
+                
+        elif self.menu_state == 'SNAKE_DIFF':
+            title = self.font_title.render("请选择训练难度", True, COLORS['white'])
+            rect = title.get_rect(center=(cx, self.title_y))
+            surface.blit(title, rect)
+            
+            for btn in self.btns_diff:
+                btn.draw(surface)

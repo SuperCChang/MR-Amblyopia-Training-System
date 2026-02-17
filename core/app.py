@@ -1,50 +1,58 @@
+# core/app.py
 import pygame
-from settings import COLORS
-
-# 引入具体场景
-from games.main_menu import MainMenu
-from games.snake.game import SnakeGame
-from games.login_scene import LoginScene
-from games.pet.scene import PetScene
-# from games.eyesight.game import EyesightGame 
+from settings import FPS, WINDOW_TITLE
 
 class GameManager:
     def __init__(self):
-        self.is_running = True
-        
-        # 默认难度设为字符串 key
-        self.difficulty = 'EASY' 
-        
+        self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
-        self.scenes = {} 
+        self.is_running = True
+        self.difficulty = 'EASY'
+        
+        # 场景容器
+        self.scenes = {}
         self.current_scene = None
-
-        self.show_fps = True
+        
+        # FPS显示
+        self.show_fps = False
         self.font_fps = pygame.font.SysFont("arial", 20, bold=True)
+        
+        # 加载所有场景
+        self.load_scenes()
 
     def load_scenes(self):
+        # 延迟导入，防止循环依赖
+        from games.login_scene import LoginScene
         from games.main_menu import MainMenu
         from games.snake.game import SnakeGame
-        from games.login_scene import LoginScene # 确保导入
+        from games.pet.scene import PetScene
         
         self.scenes = {
-            'login': LoginScene(self), # 注册登录场景
-            'menu': MainMenu(self),
+            'login': LoginScene(self),
+            'menu': MainMenu(self),     # 【检查】这里必须是 MainMenu
             'snake': SnakeGame(self),
-            'pet': PetScene(self)
+            'pet': PetScene(self)       # 【检查】这里必须是 PetScene
         }
         
-        # 【关键修改】入口改为登录界面
+        # 默认从登录页开始
         self.current_scene = self.scenes['login']
 
     def change_scene(self, scene_name):
+        """切换场景"""
         if scene_name in self.scenes:
+            print(f"[系统] 切换场景 -> {scene_name}")
+            
+            # 【关键修复】切换场景时，清空当前的消息队列
+            # 防止你在"登录"按钮上点了一下，鼠标抬起时却误触了新场景里的按钮
+            pygame.event.clear()
+            
             self.current_scene = self.scenes[scene_name]
             
+            # 触发新场景的刷新逻辑
             if hasattr(self.current_scene, 'on_enter'):
                 self.current_scene.on_enter()
         else:
-            print(f"Error: Scene {scene_name} not found!")
+            print(f"[Error] 试图切换到不存在的场景: {scene_name}")
 
     def handle_input(self, event):
         if self.current_scene:
@@ -57,25 +65,20 @@ class GameManager:
     def draw(self, surface):
         if self.current_scene:
             self.current_scene.draw(surface)
+            
         if self.show_fps:
             self._draw_fps(surface)
-    
+
     def _draw_fps(self, surface):
-        # 获取当前帧率
+        # ... (FPS绘制代码保持不变) ...
         fps = int(self.clock.get_fps())
-        
-        # 根据流畅度变色 (绿 > 黄 > 红)
-        if fps >= 55: color = COLORS['green']
-        elif fps >= 30: color = COLORS['yellow']
-        else: color = COLORS['red']
+        if fps >= 55: color = (0, 255, 0)
+        elif fps >= 30: color = (255, 255, 0)
+        else: color = (255, 0, 0)
         
         fps_text = f"FPS: {fps}"
         text_surf = self.font_fps.render(fps_text, True, color)
-        
-        # 画个黑色背景框，保证看清楚
         bg_rect = text_surf.get_rect(topright=(surface.get_width() - 10, 10))
-        # 稍微扩充一点背景框
-        bg_rect.inflate_ip(10, 10) 
-        
+        bg_rect.inflate_ip(10, 10)
         pygame.draw.rect(surface, (0, 0, 0), bg_rect, border_radius=5)
         surface.blit(text_surf, text_surf.get_rect(center=bg_rect.center))

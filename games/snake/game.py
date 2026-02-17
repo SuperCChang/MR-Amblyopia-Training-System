@@ -10,10 +10,11 @@ class SnakeGame(BaseGame):
     def __init__(self, app):
         super().__init__(app)
         
-        # --- 1. 倒计时系统 ---
-        self.total_time = settings.TRAINING_DURATION * 1000 
-        self.time_left = self.total_time
-        self.is_time_up = False
+        # --- 1. 计时系统 ---
+        # self.total_time = settings.TRAINING_DURATION * 1000 
+        # self.time_left = self.total_time
+        # self.is_time_up = False
+        self.time = 0
         
         # --- 2. 分数系统 (内存版) ---
         self.high_score = 0  # 【修改】初始化为0，不读取文件
@@ -148,16 +149,12 @@ class SnakeGame(BaseGame):
     def update(self, dt):
         super().update(dt) 
         
-        # 1. 倒计时
-        if self.time_left > 0:
-            self.time_left -= dt
-            if self.time_left <= 0:
-                self.time_left = 0
-                self.is_time_up = True
+        # 1. 计时
+        self.time += dt
 
         # 2. 动态速度
         # 基础速度减去 (当前分 * 加速系数)
-        dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION)
+        dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION * 0.1)
         self.move_interval = max(settings.MIN_MOVE_INTERVAL, dynamic_speed)
 
         # 3. 移动
@@ -283,10 +280,10 @@ class SnakeGame(BaseGame):
         self._draw_ui(surface)
 
     def _draw_ui(self, surface):
-        seconds = int(self.time_left / 1000)
+        seconds = int(self.time / 1000)
         minutes = seconds // 60
         secs = seconds % 60
-        time_str = f"倒计时: {minutes:02}:{secs:02}"
+        time_str = f"计时: {minutes:02}:{secs:02}"
         
         score_str = f"得分: {self.current_score}"
         # 最高分是本次会话的最高分
@@ -307,13 +304,4 @@ class SnakeGame(BaseGame):
         surface.blit(txt_time, (settings.SCREEN_WIDTH // 2 - txt_time.get_width() // 2, 10))
         surface.blit(txt_high, (settings.SCREEN_WIDTH - 20 - txt_high.get_width(), 10))
 
-        if self.is_time_up:
-            msg = "训练完成！"
-            msg_surf = self.font_msg.render(msg, True, COLORS['red'])
-            msg_bg = self.font_msg.render(msg, True, COLORS['white'])
-            
-            cx = settings.SCREEN_WIDTH // 2
-            cy = settings.SCREEN_HEIGHT // 2
-            
-            surface.blit(msg_bg, (cx - msg_surf.get_width()//2 + 2, cy - msg_surf.get_height()//2 + 2))
-            surface.blit(msg_surf, (cx - msg_surf.get_width()//2, cy - msg_surf.get_height()//2))
+        

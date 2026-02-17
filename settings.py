@@ -56,5 +56,20 @@ PET_CONFIG = {
     'med_effect': 100,
     
     'toy_price': 20,
-    'toy_effect': 20
+    'toy_effect': 20,
+
+    'exp_gain_food': 10,  # 喂食 +10 经验
+    'exp_gain_med': 5,    # 治疗 +5 经验
+    'exp_gain_toy': 15,   # 玩耍 +15 经验
+    'exp_base': 100
 }
+
+PET_SHOP_LIST = [
+    {'id': 'cat_orange', 'name': '大橘猫', 'price': 0, 'img': 'pet_cat_orange.png'}, # 免费初始宠
+    {'id': 'dog_husky',  'name': '哈士奇', 'price': 0, 'img': 'pet_dog_husky.png'},  # 免费初始宠
+    {'id': 'cat_white',  'name': '波斯猫', 'price': 200, 'img': 'pet_cat_white.png'},
+    {'id': 'dog_shiba',  'name': '柴犬',   'price': 250, 'img': 'pet_dog_shiba.png'},
+    {'id': 'cat_black',  'name': '黑猫',   'price': 500, 'img': 'pet_cat_black.png'},
+]
+
+MAX_PET_COUNT = 3
