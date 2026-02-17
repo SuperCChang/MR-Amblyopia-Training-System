@@ -161,7 +161,7 @@ class LoginScene(BaseGame):
         cx, cy = settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2
         
         # 标题 (使用描边函数)
-        self._draw_text_with_outline(surface, "MR 弱视训练系统", self.font_big, (cx, self.title_y), COLORS['white'])
+        self._draw_text_with_outline(surface, "弱视训练系统", self.font_big, (cx, self.title_y), COLORS['white'])
         
         # 控件
         self.input_user.draw(surface)

@@ -29,9 +29,9 @@ COLORS = {
 
 # --- 难度配置表 (只控制背景和速度) ---
 DIFFICULTY_LEVELS = {
-    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 10},
-    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 15},
-    'HARD':   {'bg_grid_size': 15,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 20},
+    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 10, 'coin_rate': 2},
+    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 15, 'coin_rate': 3},
+    'HARD':   {'bg_grid_size': 15,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 20,  'coin_rate': 5},
 }
 
 TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
@@ -43,25 +43,40 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 PLAYER_NAME = "MyPlayer1"
 
 PET_CONFIG = {
-    'decay_interval': 3600,   # 离线结算周期 (秒)
-    'hunger_decay': 10,       # 每周期掉多少饱食度
-    'mood_decay': 5,          # 每周期掉多少心情
-    'sick_chance': 0.1,       # 每周期生病概率
+    # --- 时间流逝 ---
+    'decay_interval': 3600,    # 结算周期：1小时
     
-    # 商店价格与效果
-    'food_price': 10,
-    'food_effect': 30,
+    # --- 核心衰减逻辑 ---
+    'hunger_decay': 3,         # 饥饿：快 (24h = -72)
+    'mood_decay': 2,           # 心情：中 (24h = -48)
+    'health_decay_punish': 2,  # 健康：仅在生病/饥饿时扣除 (48h不理 = -96)
     
-    'med_price': 50,
-    'med_effect': 100,
+    'sick_chance': 0.15,       # 生病概率 (稍微提高，增加风险)
+    'sick_threshold': 50,      # 健康低于50时，严重影响经验
     
-    'toy_price': 20,
-    'toy_effect': 20,
-
-    'exp_gain_food': 10,  # 喂食 +10 经验
-    'exp_gain_med': 5,    # 治疗 +5 经验
-    'exp_gain_toy': 15,   # 玩耍 +15 经验
-    'exp_base': 100
+    # --- 商店与物品 ---
+    # 策略：饭是刚需(稍贵)，药是惩罚(极贵)，玩具是享受(便宜)
+    'food_price': 40, 'food_effect': 35,  # 约1.5份饭管一天
+    'med_price': 150, 'med_effect': 80,   # 生病一次等于白玩一天贪吃蛇
+    'toy_price': 15,  'toy_effect': 10,   # 便宜，靠频率刷
+    
+    # --- 互动点击 ---
+    'click_mood_gain': 2,      # 每次点击增加的心情
+    'click_exp_gain': 1,       # 点击也有微量经验
+    'max_daily_click_exp': 50,
+    
+    # --- 经验获取 (受健康值修正) ---
+    'exp_gain_food': 20,
+    'exp_gain_med': 5,
+    'exp_gain_toy': 10,
+    
+    # --- 升级系统 ---
+    'max_level': 30,
+    'base_pet_slots': 3,
+    
+    # --- 惩罚 ---
+    'exp_decay_starve': 50,    # 饿肚子扣经验巨快
+    'exp_decay_sick': 30,      # 生病扣经验
 }
 
 PET_SHOP_LIST = [
@@ -73,3 +88,8 @@ PET_SHOP_LIST = [
 ]
 
 MAX_PET_COUNT = 3
+def get_exp_needed(level):
+    # 稍微平滑一点的曲线
+    if level < 10: return 150
+    elif level < 20: return 400
+    else: return 800

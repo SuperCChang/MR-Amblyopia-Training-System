@@ -4,6 +4,7 @@ import os
 import settings
 from core.base_game import BaseGame
 from core.data_manager import DataManager
+from core.path_utils import resource_path
 from settings import COLORS, DIFFICULTY_LEVELS, GAME_GRID_RATIO
 
 class SnakeGame(BaseGame):
@@ -15,6 +16,23 @@ class SnakeGame(BaseGame):
         # self.time_left = self.total_time
         # self.is_time_up = False
         self.time = 0
+        self.snd_eat = None
+        try:
+            path = resource_path(os.path.join('assets', 'sounds', 'eat.wav'))
+            if os.path.exists(path):
+                self.snd_eat = pygame.mixer.Sound(path)
+                self.snd_eat.set_volume(0.7)
+        except Exception as e:
+            print(f"Sound Error: {e}")
+        
+        self.snd_die = None
+        try:
+            path = resource_path(os.path.join('assets', 'sounds', 'die.wav'))
+            if os.path.exists(path):
+                self.snd_die = pygame.mixer.Sound(path)
+                self.snd_die.set_volume(0.8) # 死亡音效可以稍微大声点，起警示作用
+        except Exception as e:
+            print(f"Sound Error: {e}")
         
         # --- 2. 分数系统 (内存版) ---
         self.high_score = 0  # 【修改】初始化为0，不读取文件
@@ -154,14 +172,16 @@ class SnakeGame(BaseGame):
 
         # 2. 动态速度
         # 基础速度减去 (当前分 * 加速系数)
-        dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION * 0.1)
+        dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION * 0.01)
         self.move_interval = max(settings.MIN_MOVE_INTERVAL, dynamic_speed)
 
         # 3. 移动
         self.move_timer += dt
-        if self.move_timer > self.move_interval:
-            self.move_snake()
+        if self.move_timer >= self.move_interval:
             self.move_timer = 0
+            self.move_snake()
+            
+            
 
     def move_snake(self):
         head_x, head_y = self.snake[0]
@@ -173,16 +193,31 @@ class SnakeGame(BaseGame):
 
         # 撞到自己
         if new_head in self.snake:
+            print("Game Over: Hit self")
+            
+            # 【新增】播放死亡音效
+            if self.snd_die:
+                self.snd_die.play()
             self.reset_game() 
             return
 
         self.snake.insert(0, new_head)
         
-        # 吃到食物
+        # --- 【核心修改】吃到食物逻辑在这里统一处理 ---
         if new_head in self.foods:
-            self.current_score += 1 
+            # 1. 计算金币
+            diff = self.app.difficulty
+            rate = settings.DIFFICULTY_LEVELS[diff]['coin_rate']
+            coins_earned = 1 * rate # 每个苹果的基础分 * 倍率
             
-            # 【修改】实时更新最高分 (打破纪录时立即显示)
+            self.current_score += 1 
+            # 【核心修改】实时加金币，让玩家有获得感
+            DataManager().add_coins(coins_earned)
+            
+            # 2. 播放音效
+            if self.snd_eat: self.snd_eat.play()
+
+            # 3. 更新最高分
             if self.current_score > self.high_score:
                 self.high_score = self.current_score
                 

@@ -2,7 +2,7 @@
 import threading
 import hashlib
 import json
-import time
+import time, datetime
 import random
 from supabase import create_client, Client
 import settings
@@ -79,19 +79,38 @@ class DataManager:
             elif p_data is None:
                 self.user_data['pet_data'] = []
             
+            today_str = datetime.date.today().isoformat() # "2023-10-27"
             for pet in self.user_data['pet_data']:
                 if 'level' not in pet: pet['level'] = 1
                 if 'exp' not in pet: pet['exp'] = 0
-
+                
+                # 【新增】补全点击限制字段
+                if 'daily_click_exp' not in pet: pet['daily_click_exp'] = 0
+                if 'last_click_date' not in pet: pet['last_click_date'] = today_str
+                
+                # 顺便检查一下是否需要跨天重置
+                if pet['last_click_date'] != today_str:
+                    pet['daily_click_exp'] = 0
+                    pet['last_click_date'] = today_str
+            
             # 计算离线衰减
             self._calculate_offline_decay()
             return "SUCCESS"
         except Exception as e:
             print(f"Login error: {e}")
             return "未知错误"
+    
+    def get_max_slots(self):
+        """【新增】计算最大宠物栏位 = 基础3 + (30级宠物的数量)"""
+        base = settings.PET_CONFIG.get('base_pet_slots', 3)
+        pets = self.get_pets()
+        bonus = 0
+        for p in pets:
+            if p.get('level', 1) >= settings.PET_CONFIG['max_level']:
+                bonus += 1
+        return base + bonus
 
     def _calculate_offline_decay(self):
-        """计算所有宠物的离线衰减"""
         pets = self.get_pets()
         if not pets: return
 
@@ -105,24 +124,39 @@ class DataManager:
             cycles = int((current_time - last_time) / interval)
             
             if cycles > 0:
-                print(f"宠物 {pet.get('name')} 离线 {cycles} 周期，结算状态...")
+                print(f"宠物 {pet.get('name')} 离线 {cycles} 周期...")
                 updated = True
-                loss_hunger = cycles * cfg.get('hunger_decay', 5)
-                loss_mood = cycles * cfg.get('mood_decay', 5)
+                
+                # 1. 基础衰减 (饥饿与心情)
+                loss_hunger = cycles * cfg.get('hunger_decay', 3)
+                loss_mood = cycles * cfg.get('mood_decay', 2)
                 
                 pet['hunger'] = max(0, pet['hunger'] - loss_hunger)
                 pet['mood'] = max(0, pet['mood'] - loss_mood)
                 
+                # 2. 生病判定 (独立概率)
                 if not pet.get('is_sick', False):
-                    for _ in range(cycles):
-                        if random.random() < cfg.get('sick_chance', 0.1):
-                            pet['is_sick'] = True
-                            print(f"糟糕！{pet.get('name')} 生病了！")
-                            break
+                    # 即使只离线几小时，也有概率生病
+                    # 这里用简单的伯努利试验模拟：离线越久，至少生病一次的概率越高
+                    fail_prob = 1.0 - cfg.get('sick_chance', 0.15)
+                    if random.random() > (fail_prob ** cycles): # 只要有一次判定生病
+                         pet['is_sick'] = True
+                         print(f"  - {pet['name']} 生病了！")
                 
-                if pet.get('is_sick'):
-                    loss_health = cycles * 20
+                # 3. 【核心修改】健康值惩罚逻辑
+                # 只有当：生病了 OR 饿坏了(饥饿<20) 时，健康值才下降
+                if pet.get('is_sick') or pet['hunger'] < 20:
+                    loss_health = cycles * cfg.get('health_decay_punish', 2)
                     pet['health'] = max(0, pet['health'] - loss_health)
+                    print(f"  - 状态恶化，健康值减少 {loss_health}")
+
+                # 4. 经验倒扣
+                exp_loss = 0
+                if pet['hunger'] < 10: exp_loss += cycles * cfg.get('exp_decay_starve', 50)
+                if pet.get('is_sick'): exp_loss += cycles * cfg.get('exp_decay_sick', 30)
+                
+                if exp_loss > 0:
+                    pet['exp'] = max(0, pet.get('exp', 0) - exp_loss)
                 
                 pet['last_update'] = current_time
         
@@ -162,23 +196,27 @@ class DataManager:
         return self.user_data.get('pet_data', [])
 
     def add_new_pet(self, pet_config, custom_name=None):
-        """购买新宠物 (支持自定义名字)"""
-        if len(self.get_pets()) >= settings.MAX_PET_COUNT:
-            return False, "宠物已满"
+        """购买新宠物 (修改栏位检查逻辑)"""
+        # 【修改】使用动态的最大栏位限制
+        max_slots = self.get_max_slots()
+        if len(self.get_pets()) >= max_slots:
+            return False, f"宠物栏已满 ({len(self.get_pets())}/{max_slots})\n培养满级宠物可增加栏位！"
             
-        # 如果用户没填名字，就用默认种族名 (如"大橘猫")
         final_name = custom_name if custom_name and custom_name.strip() else pet_config['name']
-            
+
+        today_str = datetime.date.today().isoformat()  
         new_pet = {
             "id": pet_config['id'],
-            "name": final_name,     # 使用最终决定的名字
+            "name": final_name,
             "hunger": 100,
             "health": 100,
             "mood": 100,
             "is_sick": False,
             "last_update": time.time(),
             "level": 1,
-            "exp": 0
+            "exp": 0,
+            "daily_click_exp": 0,
+            "last_click_date": today_str
         }
         self.user_data['pet_data'].append(new_pet)
         self.sync_data()

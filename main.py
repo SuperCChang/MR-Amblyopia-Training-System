@@ -1,10 +1,23 @@
 # main.py (Debug 版本)
-import pygame
-import sys
+import pygame, sys, os
 import settings
 from core.app import GameManager
+from core.path_utils import resource_path
 
 def main():
+    print("--- STEP 0: Audio Init ---")
+    # 【新增】显式初始化音频模块
+    # frequency=44100: 标准采样率
+    # size=-16: 16位有符号音频
+    # channels=2: 双声道
+    # buffer=512: 缓冲区大小，越小延迟越低，但太小可能没声音。如果还不行，尝试改为 2048 或 4096
+    try:
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=512)
+        pygame.mixer.init()
+        print("Audio mixer initialized successfully.")
+    except Exception as e:
+        print(f"Audio init failed: {e}")
+    
     print("--- STEP 1: Pygame Init ---")
     pygame.init()
     pygame.font.init()
@@ -21,6 +34,26 @@ def main():
     
     pygame.display.set_caption(settings.WINDOW_TITLE)
     clock = pygame.time.Clock()
+    
+    print("--- STEP 3.5: Loading BGM ---")
+    try:
+        # 1. 寻找 bgm.wav
+        bgm_path = resource_path(os.path.join('assets', 'sounds', 'bgm.wav'))
+        
+        if os.path.exists(bgm_path):
+            # 2. 加载音乐 (Music 模式，专门用于长音频)
+            pygame.mixer.music.load(bgm_path)
+            
+            # 3. 设置音量 (0.0 ~ 1.0)，背景音乐不要太吵，建议 0.2
+            pygame.mixer.music.set_volume(0.2)
+            
+            # 4. 播放 (-1 表示无限循环)
+            pygame.mixer.music.play(-1)
+            print("Global BGM started.")
+        else:
+            print("Warning: bgm.wav not found.")
+    except Exception as e:
+        print(f"BGM Error: {e}")
 
     print("--- STEP 4: Initializing GameManager ---")
     game_manager = GameManager()
