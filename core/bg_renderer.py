@@ -10,7 +10,7 @@ class BackgroundRenderer:
     _last_screen_size = (0, 0)
 
     @staticmethod
-    def draw(surface, mode_index, current_time, grid_size, stripe_width):
+    def draw(surface, mode_index, current_time, grid_size, stripe_width, rotate_ratio):
         # 0. 分辨率变化检测
         current_size = (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)
         if current_size != BackgroundRenderer._last_screen_size:
@@ -24,7 +24,7 @@ class BackgroundRenderer:
             
         # --- Group 2: 旋转条栅 (3-5) ---
         elif mode_index in [3, 4, 5]:
-            angle = (current_time / 50) % 360
+            angle = (current_time / 50) % 360 * rotate_ratio
             c1, c2 = COLORS['black'], COLORS['white']
             if mode_index == 4: c1, c2 = COLORS['red'], COLORS['yellow']
             if mode_index == 5: c1, c2 = COLORS['blue'], COLORS['yellow']

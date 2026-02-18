@@ -5,7 +5,7 @@ import settings
 from core.base_game import BaseGame
 from core.data_manager import DataManager
 from core.path_utils import resource_path
-from settings import COLORS, DIFFICULTY_LEVELS, GAME_GRID_RATIO
+from settings import COLORS, DIFFICULTY_LEVELS
 
 class SnakeGame(BaseGame):
     def __init__(self, app):
@@ -31,6 +31,15 @@ class SnakeGame(BaseGame):
             if os.path.exists(path):
                 self.snd_die = pygame.mixer.Sound(path)
                 self.snd_die.set_volume(0.8) # 死亡音效可以稍微大声点，起警示作用
+        except Exception as e:
+            print(f"Sound Error: {e}")
+        
+        self.snd_good = None
+        try:
+            path = resource_path(os.path.join('assets', 'sounds', 'goodjob.wav'))
+            if os.path.exists(path):
+                self.snd_good = pygame.mixer.Sound(path)
+                self.snd_good.set_volume(0.8)
         except Exception as e:
             print(f"Sound Error: {e}")
         
@@ -79,6 +88,22 @@ class SnakeGame(BaseGame):
         self.reset_game()
 
     # 【删除】 _load_high_score 和 _save_high_score 方法都被移除了
+    def on_enter(self):
+        """进入场景时，强制重置游戏为初始状态"""
+        print(f"进入贪吃蛇场景，应用难度: {self.app.difficulty}")
+        
+        # 如果上一局还没结算（比如中途退出），这里先结算一下金币和最高分
+        if self.current_score > 0:
+            # 结算金币
+            # 注意：这里可能需要把 reset_game 里的结算逻辑提取出来，
+            # 或者直接调用 reset_game，因为它里面已经包含了结算和重置逻辑
+            pass 
+
+        # 直接调用重置方法，它会：
+        # 1. 结算上一局的分数和金币（如果中途退出的话）
+        # 2. 读取当前的 self.app.difficulty 设置新速度
+        # 3. 重置蛇的位置、长度、苹果
+        self.reset_game()
 
     def reset_game(self):
         """蛇死亡或重新开始时调用"""
@@ -104,7 +129,7 @@ class SnakeGame(BaseGame):
         self.move_interval = self.base_speed
         
         # 5. 【第一步】计算基础网格大小
-        self.grid_size = settings.SCREEN_WIDTH // GAME_GRID_RATIO
+        self.grid_size = settings.SCREEN_WIDTH // diff_settings['snake_size']
         self.grid_size = max(20, self.grid_size)
 
         # 6. 【第二步】核心修复：计算行数和列数 (必须在这里定义 self.cols)
@@ -172,8 +197,9 @@ class SnakeGame(BaseGame):
 
         # 2. 动态速度
         # 基础速度减去 (当前分 * 加速系数)
-        dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION * 0.01)
-        self.move_interval = max(settings.MIN_MOVE_INTERVAL, dynamic_speed)
+        # dynamic_speed = self.base_speed - (self.current_score * settings.SPEED_ACCELERATION * 0.01)
+        # self.move_interval = max(settings.MIN_MOVE_INTERVAL, dynamic_speed)
+        self.move_interval = self.base_speed    
 
         # 3. 移动
         self.move_timer += dt
@@ -216,6 +242,7 @@ class SnakeGame(BaseGame):
             
             # 2. 播放音效
             if self.snd_eat: self.snd_eat.play()
+            if self.snd_good: self.snd_good.play()
 
             # 3. 更新最高分
             if self.current_score > self.high_score:

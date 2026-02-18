@@ -8,15 +8,17 @@ class BaseGame:
         self.app = app
         self.bg_mode = 0
         self.bg_timer = 0
-        self.SWITCH_INTERVAL = 5000 # 5秒切换
+        self.settings_data = DIFFICULTY_LEVELS[app.difficulty]
+        # self.SWITCH_INTERVAL = 5000 # 5秒切换
+        self.SWITCH_INTERVAL = self.settings_data['switch_interval']
 
     def handle_input(self, event):
         if event.type == pygame.KEYDOWN:
             # 调试用：Tab 手动切
-            if event.key == pygame.K_TAB:
-                self.bg_mode = (self.bg_mode + 1) % 9
-                self.bg_timer = 0
-            elif event.key == pygame.K_ESCAPE:
+            # if event.key == pygame.K_TAB:
+                # self.bg_mode = (self.bg_mode + 1) % 9
+                # self.bg_timer = 0
+            if event.key == pygame.K_ESCAPE:
                 self.app.change_scene('menu')
 
     def update(self, dt):
@@ -28,16 +30,15 @@ class BaseGame:
             # print(f"Background switched to: {self.bg_mode}")
 
     def draw(self, surface):
-        # 获取难度 key
-        diff_key = self.app.difficulty
         # 从字典中取配置
-        settings_data = DIFFICULTY_LEVELS[diff_key]
+        settings_data = self.settings_data
         
         bg_g_size = settings_data['bg_grid_size']
         s_width = settings_data['stripe_width']
-        
+        rotate_ratio = settings_data['rotate_ratio']
+
         current_time = pygame.time.get_ticks()
-        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width)
+        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width, rotate_ratio)
         
         self.draw_content(surface)
 

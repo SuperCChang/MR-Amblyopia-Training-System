@@ -1,5 +1,6 @@
 # games/pet/scene.py
 import pygame, os
+import datetime
 from core.base_game import BaseGame
 from core.ui import Button, InputBox
 from core.data_manager import DataManager
@@ -322,45 +323,69 @@ class PetScene(BaseGame):
             self._check_level_change(curr_pet)
 
     def _check_level_change(self, pet, quiet=False):
-        """【新增】复杂的升级/降级逻辑"""
-        level = pet.get('level', 1)
-        exp = pet.get('exp', 0)
+        """【修复版】使用循环代替递归，防止卡死"""
         
-        # 获取当前等级所需的经验阈值 (梯度)
-        needed = settings.get_exp_needed(level)
+        # 安全计数器：防止死循环（比如最多允许连升/连降100级）
+        loop_safety = 0
         
-        # === 升级逻辑 ===
-        # 如果经验满了，且没到最大等级 -> 升级
-        if exp >= needed and level < settings.PET_CONFIG['max_level']:
-            pet['level'] = level + 1
-            pet['exp'] = exp - needed # 扣除消耗
-            if not quiet:
-                self._show_msg(f"升级！{pet['name']} -> Lv.{pet['level']}")
-                # 升级回满状态
-                pet['mood'] = 100
-                pet['health'] = 100
+        while loop_safety < 100:
+            loop_safety += 1
             
-            # 更新实体大小
-            if self.current_entity:
-                self.current_entity.set_level(pet['level'])
+            level = pet.get('level', 1)
+            exp = pet.get('exp', 0)
+            
+            # 1. 获取当前等级升级所需经验
+            # 确保 settings.py 里有 get_exp_needed 函数
+            if hasattr(settings, 'get_exp_needed'):
+                needed = settings.get_exp_needed(level)
+            else:
+                # 保底逻辑，防止 settings 没更新导致报错
+                needed = 100 * level 
+            
+            # 避免 needed 为 0 导致死循环
+            if needed <= 0: needed = 100
+
+            # === 情况 A: 升级 ===
+            if exp >= needed and level < settings.PET_CONFIG['max_level']:
+                pet['level'] = level + 1
+                pet['exp'] = exp - needed # 扣除消耗
                 
-            # 递归检查是否能连升两级 (虽然很难)
-            self._check_level_change(pet, quiet)
+                if not quiet:
+                    self._show_msg(f"升级！{pet['name']} -> Lv.{pet['level']}")
+                    pet['mood'] = 100
+                    pet['health'] = 100
+                
+                # 更新实体大小
+                if self.current_entity:
+                    self.current_entity.set_level(pet['level'])
+                
+                # 继续下一轮循环，检查是否还能再升
+                continue 
+                
+            # === 情况 B: 降级 ===
+            elif exp < 0 and level > 1:
+                pet['level'] = level - 1
+                
+                # 获取降级后的那一级的经验上限
+                if hasattr(settings, 'get_exp_needed'):
+                    prev_needed = settings.get_exp_needed(pet['level'])
+                else:
+                    prev_needed = 100 * pet['level']
+                
+                # exp 是负数，加上上一级的上限
+                pet['exp'] = prev_needed + exp 
+                
+                if not quiet:
+                    self._show_msg(f"警报！{pet['name']} 降级为 Lv.{pet['level']}!")
+                
+                if self.current_entity:
+                    self.current_entity.set_level(pet['level'])
+                
+                # 继续下一轮循环，检查是否还要再降
+                continue
             
-        # === 降级逻辑 ===
-        # 如果经验是负数，且等级 > 1 -> 降级
-        elif exp < 0 and level > 1:
-            pet['level'] = level - 1
-            # 降级后，经验值变为上一级的最大值减去一点点 (避免立刻又降)
-            prev_needed = settings.get_exp_needed(pet['level'])
-            pet['exp'] = prev_needed + exp # exp是负数，所以是相减
-            
-            if not quiet:
-                self._show_msg(f"警报！{pet['name']} 状态过差，降级为 Lv.{pet['level']}!")
-            
-            # 更新实体大小
-            if self.current_entity:
-                self.current_entity.set_level(pet['level'])
+            # === 情况 C: 正常，退出循环 ===
+            break
 
     def _show_msg(self, text):
         self.msg = text

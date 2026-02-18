@@ -12,7 +12,7 @@ WINDOW_TITLE = "Python Game Collection"
 # --- 游戏参数 ---
 # 蛇的大小 = 屏幕宽度 / 这个比例
 # 例如屏幕宽 1920，比例 40，那么蛇就是 48px
-GAME_GRID_RATIO = 20 
+# GAME_GRID_RATIO = 20 
 
 # --- 颜色定义 ---
 COLORS = {
@@ -29,9 +29,12 @@ COLORS = {
 
 # --- 难度配置表 (只控制背景和速度) ---
 DIFFICULTY_LEVELS = {
-    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 10, 'coin_rate': 2},
-    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 20,  'snake_speed': 150, 'snake_size': 15, 'coin_rate': 3},
-    'HARD':   {'bg_grid_size': 15,  'stripe_width': 10,  'snake_speed': 80, 'snake_size': 20,  'coin_rate': 5},
+    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 20, 
+               'switch_interval': 5000, 'rotate_ratio': 1,'coin_rate': 2},
+    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 10,  'snake_speed': 200, 'snake_size': 30,
+               'switch_interval': 5000, 'rotate_ratio': 1.5, 'coin_rate': 3},
+    'HARD':   {'bg_grid_size': 15,  'stripe_width': 5,  'snake_speed': 120, 'snake_size': 40, 
+               'switch_interval': 5000, 'rotate_ratio': 10, 'coin_rate': 5},
 }
 
 TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
@@ -87,7 +90,6 @@ PET_SHOP_LIST = [
     {'id': 'cat_black',  'name': '黑猫',   'price': 500, 'img': 'pet_cat_black.png'},
 ]
 
-MAX_PET_COUNT = 3
 def get_exp_needed(level):
     # 稍微平滑一点的曲线
     if level < 10: return 150
