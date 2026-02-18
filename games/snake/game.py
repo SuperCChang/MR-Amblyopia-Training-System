@@ -164,7 +164,8 @@ class SnakeGame(BaseGame):
         
         # 10. 生成食物
         self.foods = []
-        for _ in range(3):
+        self.foods_amount = diff_settings['apple_amount']
+        for _ in range(self.foods_amount):
             self._add_new_food()
 
     def _add_new_food(self):
@@ -342,28 +343,37 @@ class SnakeGame(BaseGame):
         self._draw_ui(surface)
 
     def _draw_ui(self, surface):
+        # 1. 计算时间
         seconds = int(self.time / 1000)
         minutes = seconds // 60
         secs = seconds % 60
         time_str = f"计时: {minutes:02}:{secs:02}"
         
-        score_str = f"得分: {self.current_score}"
-        # 最高分是本次会话的最高分
-        high_str = f"最高: {self.high_score}"
+        # 2. 获取当前总金币 (实时更新)
+        # 注意：这里直接从 DataManager 获取全局金币，这样你吃苹果时数字会实时跳动
+        current_coins = DataManager().get_coins()
+        coin_str = f"持有金币: {current_coins}"
         
-        # 背景条
+        # 3. 绘制背景条 (半透明黑条)
         s = pygame.Surface((settings.SCREEN_WIDTH, 40))
         s.set_alpha(150)
         s.fill((0, 0, 0))
         surface.blit(s, (0,0))
 
+        # 4. 渲染文字
+        # 时间显示为白色
         txt_time = self.font_ui.render(time_str, True, COLORS['white'])
-        txt_score = self.font_ui.render(score_str, True, COLORS['white'])
-        txt_high = self.font_ui.render(high_str, True, COLORS['yellow'])
+        # 金币显示为黄色，突显财富感
+        txt_coins = self.font_ui.render(coin_str, True, COLORS['yellow'])
 
-        # 布局
-        surface.blit(txt_score, (20, 10))
+        # 5. 布局
+        # 金币显示在左上角 (替代原来的分数)
+        surface.blit(txt_coins, (20, 10))
+        
+        # 时间依然居中
         surface.blit(txt_time, (settings.SCREEN_WIDTH // 2 - txt_time.get_width() // 2, 10))
-        surface.blit(txt_high, (settings.SCREEN_WIDTH - 20 - txt_high.get_width(), 10))
-
+        
+        # 右上角原本是最高分，现在空出来，或者你可以加个难度显示
+        # txt_diff = self.font_ui.render(f"难度: {self.app.difficulty}", True, COLORS['grey'])
+        # surface.blit(txt_diff, (settings.SCREEN_WIDTH - 20 - txt_diff.get_width(), 10))
         

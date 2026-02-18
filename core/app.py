@@ -21,20 +21,22 @@ class GameManager:
         self.load_scenes()
 
     def load_scenes(self):
-        # 延迟导入，防止循环依赖
         from games.login_scene import LoginScene
         from games.main_menu import MainMenu
         from games.snake.game import SnakeGame
         from games.pet.scene import PetScene
-        
+        from games.catch.game import CatchGame
+        from games.fruit.game import FruitGame
+
         self.scenes = {
             'login': LoginScene(self),
-            'menu': MainMenu(self),     # 【检查】这里必须是 MainMenu
+            'menu': MainMenu(self),
             'snake': SnakeGame(self),
-            'pet': PetScene(self)       # 【检查】这里必须是 PetScene
+            'pet': PetScene(self),
+            'catch': CatchGame(self),
+            'fruit': FruitGame(self)
         }
         
-        # 默认从登录页开始
         self.current_scene = self.scenes['login']
 
     def change_scene(self, scene_name):

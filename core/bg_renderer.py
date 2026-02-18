@@ -45,35 +45,47 @@ class BackgroundRenderer:
 
     @staticmethod
     def _draw_rotating_stripes(surface, angle, color1, color2, width):
-        # 1. 缓存键值
-        cache_key = (width, color1, color2)
+        # 1. 缓存键值 (加入 supersample 标记以防万一，虽然这里隐式包含在width里)
+        cache_key = (width, color1, color2, "supersampled")
 
         # 2. 创建缓存 (如果不存在)
         if cache_key not in BackgroundRenderer._stripe_cache:
             w, h = settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT
+            # 计算对角线长度，保证旋转时不会露出黑边
             diagonal = math.ceil(math.sqrt(w**2 + h**2))
             size = diagonal + 20 
 
-            # 创建大图
-            temp_surf = pygame.Surface((size, size))
+            # === 【核心优化：预渲染超采样】 ===
+            # 我们创建一个 2 倍大小的画布进行绘制
+            # 然后缩小回 1 倍，这样边缘就会自带抗锯齿效果
+            scale_ratio = 2
+            big_size = size * scale_ratio
+            big_width = width * scale_ratio
+            
+            # 在大画布上绘图
+            temp_surf = pygame.Surface((big_size, big_size))
             temp_surf.fill(color1)
             
-            for x in range(0, size, width * 2):
-                pygame.draw.rect(temp_surf, color2, (x + width, 0, width, size))
+            # 绘制大条纹
+            for x in range(0, big_size, big_width * 2):
+                pygame.draw.rect(temp_surf, color2, (x + big_width, 0, big_width, big_size))
             
-            # 【核心优化 1】转换为显示格式！
-            # 这能极大提升后续的 blit 和 rotate 速度 (从 20FPS 提升到 60FPS 的关键)
-            # 注意：如果 convert() 报错，可能是因为 display 还没 init，但在 draw 调用时肯定已经 init 了
+            # 使用 smoothscale 高质量缩小回目标尺寸 (抗锯齿发生的步骤)
+            # 这一步比较慢，但只在游戏加载或切换难度时执行一次，不影响游戏帧率
+            final_surf = pygame.transform.smoothscale(temp_surf, (size, size))
+
+            # 转换为显示格式，加速 blit
             if pygame.display.get_surface():
-                temp_surf = temp_surf.convert()
+                final_surf = final_surf.convert()
 
-            BackgroundRenderer._stripe_cache[cache_key] = temp_surf
+            BackgroundRenderer._stripe_cache[cache_key] = final_surf
 
-        # 3. 取出源图
+        # 3. 取出源图 (此时源图已经是抗锯齿过的了)
         source_surf = BackgroundRenderer._stripe_cache[cache_key]
 
-        # 4. 【核心优化 2】回退到 rotate (快速旋转)
-        # 放弃 rotozoom，因为在 1080p+ 分辨率下实时插值太慢了
+        # 4. 实时旋转
+        # 依然使用最快的 rotate (而非 slow rotozoom)，因为源图已经柔化过
+        # 这样旋转产生的锯齿感会大幅降低，且帧率保持 60FPS
         rotated_surf = pygame.transform.rotate(source_surf, angle)
         
         # 5. 居中绘制
@@ -82,7 +94,6 @@ class BackgroundRenderer:
 
     @staticmethod
     def _draw_checkerboard(surface, bg_color, fill_color, size):
-        # 保持之前的逻辑...
         safe_size = max(1, min(size, settings.SCREEN_WIDTH - 1, settings.SCREEN_HEIGHT - 1))
         if safe_size < 5: return 
 

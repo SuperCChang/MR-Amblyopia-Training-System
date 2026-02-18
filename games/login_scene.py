@@ -43,11 +43,11 @@ class LoginScene(BaseGame):
         self.chk_show_pass = Checkbox(cx - input_w//2, cy - 100 + gap + input_h + 10, 24, "显示密码", self.font, checked=False)
 
         btn_y = cy - 100 + gap * 2 + 30
-        self.btn_login = Button(cx - btn_w - 20, btn_y, btn_w, btn_h, "登录", self.font, bg_color=COLORS['green'])
-        self.btn_reg = Button(cx + 20, btn_y, btn_w, btn_h, "注册", self.font, bg_color=COLORS['blue'])
+        self.btn_login = Button(cx - btn_w//2, btn_y, btn_w, btn_h, "登录", self.font, bg_color=COLORS['green'])
+        # self.btn_reg = Button(cx + 20, btn_y, btn_w, btn_h, "注册", self.font, bg_color=COLORS['blue'])
         self.btn_exit = Button(cx - btn_w//2, btn_y + gap, btn_w, btn_h, "退出", self.font, bg_color=COLORS['red'])
         
-        self.status_msg = "请登录或注册账号"
+        self.status_msg = "请登录账号"
         self.msg_color = COLORS['white']
 
     def _load_bg(self):
@@ -70,7 +70,7 @@ class LoginScene(BaseGame):
         # 1. 鼠标悬停
         if event.type == pygame.MOUSEMOTION:
             self.btn_login.check_hover(event.pos)
-            self.btn_reg.check_hover(event.pos)
+            # self.btn_reg.check_hover(event.pos)
             self.btn_exit.check_hover(event.pos)
 
         # 2. 复选框逻辑
@@ -87,7 +87,7 @@ class LoginScene(BaseGame):
         # 4. 按钮点击
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_login.rect.collidepoint(event.pos): self.do_login()
-            elif self.btn_reg.rect.collidepoint(event.pos): self.do_register()
+            # elif self.btn_reg.rect.collidepoint(event.pos): self.do_register()
             elif self.btn_exit.rect.collidepoint(event.pos): self.app.is_running = False
 
     def do_login(self):
@@ -168,7 +168,7 @@ class LoginScene(BaseGame):
         self.input_pass.draw(surface)
         self.chk_show_pass.draw(surface) # 绘制复选框
         self.btn_login.draw(surface)
-        self.btn_reg.draw(surface)
+        # self.btn_reg.draw(surface)
         self.btn_exit.draw(surface)
         
         # 状态文字 (使用描边函数)

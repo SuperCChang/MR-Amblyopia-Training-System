@@ -19,8 +19,10 @@ class PetScene(BaseGame):
         self.state = 'HOME'
         
         self.pets_data = []
-        self.current_index = 0
-        self.current_entity = None
+        self.current_index = 0 # 当前选中的是列表里的第几个宠物
+        
+        # 【修改】现在管理多个实体列表
+        self.pet_entities = [] 
         
         self.buttons = []
         self.msg = ""
@@ -42,8 +44,7 @@ class PetScene(BaseGame):
         self.snd_feed = None
         try:
             path = resource_path(os.path.join('assets', 'sounds', 'eat.wav'))
-            if os.path.exists(path):
-                self.snd_feed = pygame.mixer.Sound(path)
+            if os.path.exists(path): self.snd_feed = pygame.mixer.Sound(path)
         except: pass
 
     def on_enter(self):
@@ -52,25 +53,43 @@ class PetScene(BaseGame):
         if self.current_index >= len(self.pets_data):
             self.current_index = 0
             
-        # 检查是否因为离线掉经验而降级
+        # 检查离线降级
         for p in self.pets_data:
-            self._check_level_change(p, quiet=True) # 静默检查降级
+            self._check_level_change(p, quiet=True) 
             
         self.state = 'HOME'
         self.show_name_modal = False
         self.show_abandon_modal = False
-        self._refresh_entity()
+        
+        # 【修改】初始化所有实体
+        self._init_all_entities()
         self._init_ui()
 
-    def _refresh_entity(self):
-        if self.pets_data and 0 <= self.current_index < len(self.pets_data):
-            p_data = self.pets_data[self.current_index]
-            cx, cy = settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2
-            # 【核心】传入当前等级
+    def _init_all_entities(self):
+        """一次性生成所有宠物的实体"""
+        self.pet_entities = []
+        for i, p_data in enumerate(self.pets_data):
             level = p_data.get('level', 1)
-            self.current_entity = PetEntity(p_data['id'], cx, cy, level)
-        else:
-            self.current_entity = None
+            entity = PetEntity(p_data, level) # 传入完整数据引用
+            # 如果是当前选中的索引，标记为选中
+            if i == self.current_index:
+                entity.is_selected = True
+            self.pet_entities.append(entity)
+
+    def _select_pet(self, index):
+        """切换当前选中的宠物"""
+        if 0 <= index < len(self.pet_entities):
+            # 取消旧的选中
+            if 0 <= self.current_index < len(self.pet_entities):
+                self.pet_entities[self.current_index].is_selected = False
+            
+            # 设置新的选中
+            self.current_index = index
+            self.pet_entities[index].is_selected = True
+            
+            # 播放叫声提示
+            self.pet_entities[index].play_voice()
+            self._init_ui() # 刷新UI状态栏
 
     def _init_ui(self):
         self.buttons = []
@@ -96,7 +115,7 @@ class PetScene(BaseGame):
             p_med = settings.PET_CONFIG['med_price']
             p_toy = settings.PET_CONFIG['toy_price']
             
-            # 【UI调整】按钮稍微下沉，避免遮挡变大的宠物
+            # 底部操作栏
             btn_y = settings.SCREEN_HEIGHT - 80 
             self.btn_feed = Button(50, btn_y, 100, 50, f"喂食(${p_food})", self.font, bg_color=COLORS['green'])
             self.btn_heal = Button(160, btn_y, 100, 50, f"治疗(${p_med})", self.font, bg_color=COLORS['red'])
@@ -104,23 +123,17 @@ class PetScene(BaseGame):
             
             self.btn_abandon = Button(settings.SCREEN_WIDTH - 120, 80, 100, 40, "弃养", self.font, bg_color=(100, 0, 0))
             self.buttons.extend([self.btn_feed, self.btn_heal, self.btn_play, self.btn_abandon])
+            
+            # 【移除】左右切换按钮不再需要，靠点击宠物切换
 
-            if len(self.pets_data) > 1:
-                cy = settings.SCREEN_HEIGHT // 2
-                # 【UI调整】切换按钮往两边挪一点
-                self.btn_prev = Button(cx - 250, cy, 50, 50, "<", self.font_title, bg_color=COLORS['grey'])
-                self.btn_next = Button(cx + 200, cy, 50, 50, ">", self.font_title, bg_color=COLORS['grey'])
-                self.buttons.extend([self.btn_prev, self.btn_next])
-
-        # 商店入口 (检查动态栏位限制)
+        # 商店入口
         max_slots = self.dm.get_max_slots()
         if len(self.pets_data) < max_slots:
-            # 显示当前栏位情况
             slot_txt = f"商店 ({len(self.pets_data)}/{max_slots})"
             txt = slot_txt if self.pets_data else "去领养第一只宠物"
             btn_w = 200 if not self.pets_data else 150
             pos_x = cx - btn_w//2 if not self.pets_data else settings.SCREEN_WIDTH - 200
-            pos_y = settings.SCREEN_HEIGHT // 2 if not self.pets_data else settings.SCREEN_HEIGHT - 140 # 稍微往上一点避免和底部冲突
+            pos_y = settings.SCREEN_HEIGHT // 2 if not self.pets_data else settings.SCREEN_HEIGHT - 140 
             
             self.btn_shop = Button(pos_x, pos_y, btn_w, 60, txt, self.font, bg_color=COLORS['blue'])
             self.buttons.append(self.btn_shop)
@@ -135,24 +148,35 @@ class PetScene(BaseGame):
         if self.show_abandon_modal:
             self._handle_abandon_modal_input(event)
             return
-        
 
         if event.type == pygame.MOUSEMOTION:
             for btn in self.buttons: btn.check_hover(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+            # 1. 检查UI按钮点击
+            clicked_ui = False
             for btn in self.buttons:
                 if btn.is_clicked(event):
                     if self.state == 'SHOP': self._handle_shop_click(btn)
                     else: self._handle_home_click(btn)
-                    return
+                    clicked_ui = True
+                    return # UI 优先级最高
             
-            if self.state == 'HOME' and self.current_entity:
-                if self.current_entity.handle_click(event.pos):
-                    # 【核心】点击增加心情和少量经验
-                    self._action_click_pet()
+            # 2. 检查宠物点击 (仅在 HOME 状态)
+            if self.state == 'HOME' and not clicked_ui:
+                # 倒序遍历，优先检测前面的（图层遮挡时选最上面的）
+                for i in range(len(self.pet_entities) - 1, -1, -1):
+                    entity = self.pet_entities[i]
+                    if entity.handle_click(event.pos):
+                        # 如果点的不是当前选中的，切换选中
+                        if i != self.current_index:
+                            self._select_pet(i)
+                        else:
+                            # 如果点的是当前选中的，触发互动增加心情
+                            self._action_click_pet()
+                        break
 
-    # --- 弹窗逻辑 (和之前保持一致，省略部分重复代码，请保留之前写的) ---
+    # --- 弹窗逻辑 (保持不变) ---
     def _open_name_modal(self, item_data):
         self.pending_buy_item = item_data
         self.show_name_modal = True
@@ -202,7 +226,7 @@ class PetScene(BaseGame):
             if self.btn_confirm_abandon.is_clicked(event):
                 self.dm.remove_pet(self.current_index)
                 self._show_msg("宠物已送走...")
-                self.on_enter()
+                self.on_enter() # 刷新列表
             elif self.btn_cancel_abandon.is_clicked(event):
                 self.show_abandon_modal = False
 
@@ -220,12 +244,7 @@ class PetScene(BaseGame):
             self._init_ui()
         elif btn == getattr(self, 'btn_exit', None):
             self.app.change_scene('menu')
-        elif btn == getattr(self, 'btn_prev', None):
-            self.current_index = (self.current_index - 1) % len(self.pets_data)
-            self._refresh_entity()
-        elif btn == getattr(self, 'btn_next', None):
-            self.current_index = (self.current_index + 1) % len(self.pets_data)
-            self._refresh_entity()
+        # 喂食等操作只针对 self.current_index
         elif btn == getattr(self, 'btn_feed', None): self._action_feed()
         elif btn == getattr(self, 'btn_heal', None): self._action_heal()
         elif btn == getattr(self, 'btn_play', None): self._action_play()
@@ -245,52 +264,52 @@ class PetScene(BaseGame):
             self._add_exp(settings.PET_CONFIG['exp_gain_med'])
             self.dm.sync_data()
             self._show_msg("治疗成功！")
-            if self.current_entity:
-                self.current_entity.play_voice()
+            if 0 <= self.current_index < len(self.pet_entities):
+                self.pet_entities[self.current_index].play_voice()
         else: self._show_msg("金币不足！")
         
     def _action_play(self):
         self._interact('mood', settings.PET_CONFIG['toy_price'], settings.PET_CONFIG['toy_effect'], "玩耍成功", settings.PET_CONFIG['exp_gain_toy'])
-        if self.current_entity:
-            self.current_entity.play_voice()
+        if 0 <= self.current_index < len(self.pet_entities):
+            self.pet_entities[self.current_index].play_voice()
     
     def _action_click_pet(self):
-        """点击宠物的奖励逻辑 (带每日上限)"""
-        self.current_entity.play_voice()
+        # 这里的 click_pet 只针对当前选中的互动 (比如摸头)
+        if not (0 <= self.current_index < len(self.pet_entities)): return
         
         curr_pet = self.pets_data[self.current_index]
+        entity = self.pet_entities[self.current_index]
         
-        # 1. 检查跨天重置
+        entity.play_voice()
+        entity.is_bouncing = True # 弹一下
+        
+        # 跨天重置
         today_str = datetime.date.today().isoformat()
         if curr_pet.get('last_click_date') != today_str:
             curr_pet['daily_click_exp'] = 0
             curr_pet['last_click_date'] = today_str
-            print("新的一天，点击经验已重置")
 
-        # 2. 增加心情 (不受限制，只要点就加，作为基础反馈)
+        # 增加心情
         gain_mood = settings.PET_CONFIG['click_mood_gain']
         curr_pet['mood'] = min(200, curr_pet['mood'] + gain_mood)
         
-        # 3. 增加经验 (受上限限制)
+        # 增加经验
         max_daily = settings.PET_CONFIG['max_daily_click_exp']
         current_daily = curr_pet.get('daily_click_exp', 0)
-        
         msg = "心情变好了~"
         
         if current_daily < max_daily:
             exp_gain = settings.PET_CONFIG['click_exp_gain']
             self._add_exp(exp_gain)
-            
-            # 记录今日已获经验
             curr_pet['daily_click_exp'] = current_daily + exp_gain
         else:
-            # 达到上限，只提示心情，不加经验
-            msg = "抚摸过多，它累了~(今日经验已达上限)"
+            msg = "抚摸过多，它累了~"
 
         self.dm.sync_data()
         self._show_msg(msg)
 
     def _interact(self, attr, cost, effect, success_msg, exp_gain=0):
+        if not self.pets_data: return
         if self.dm.get_coins() >= cost:
             self.dm.add_coins(-cost)
             curr_pet = self.pets_data[self.current_index]
@@ -299,92 +318,70 @@ class PetScene(BaseGame):
             if exp_gain > 0: self._add_exp(exp_gain)
             self.dm.sync_data()
             self._show_msg(success_msg)
-            if self.current_entity and attr == 'mood': self.current_entity.is_bouncing = True
+            
+            # 让对应实体弹跳
+            if 0 <= self.current_index < len(self.pet_entities):
+                self.pet_entities[self.current_index].is_bouncing = True
         else: self._show_msg("金币不足！")
 
     def _add_exp(self, amount):
         curr_pet = self.pets_data[self.current_index]
-        
-        # 【核心修改】健康值修正系数
         health = curr_pet.get('health', 100)
-        sick_threshold = settings.PET_CONFIG['sick_threshold'] # 50
+        sick_threshold = settings.PET_CONFIG['sick_threshold']
         
         multiplier = 1.0
-        if curr_pet.get('is_sick'):
-            multiplier = 0.5 # 生病减半
+        if curr_pet.get('is_sick'): multiplier = 0.5 
         if health < sick_threshold:
-            multiplier = 0.1 # 健康极低时，几乎无法获得经验
+            multiplier = 0.1 
             self._show_msg("健康太低，无法有效训练！")
             
         final_exp = int(amount * multiplier)
-        
         if final_exp > 0:
             curr_pet['exp'] = curr_pet.get('exp', 0) + final_exp
             self._check_level_change(curr_pet)
 
     def _check_level_change(self, pet, quiet=False):
-        """【修复版】使用循环代替递归，防止卡死"""
-        
-        # 安全计数器：防止死循环（比如最多允许连升/连降100级）
         loop_safety = 0
-        
         while loop_safety < 100:
             loop_safety += 1
-            
             level = pet.get('level', 1)
             exp = pet.get('exp', 0)
-            
-            # 1. 获取当前等级升级所需经验
-            # 确保 settings.py 里有 get_exp_needed 函数
             if hasattr(settings, 'get_exp_needed'):
                 needed = settings.get_exp_needed(level)
-            else:
-                # 保底逻辑，防止 settings 没更新导致报错
-                needed = 100 * level 
-            
-            # 避免 needed 为 0 导致死循环
+            else: needed = 100 * level
             if needed <= 0: needed = 100
 
-            # === 情况 A: 升级 ===
+            # 升级
             if exp >= needed and level < settings.PET_CONFIG['max_level']:
                 pet['level'] = level + 1
-                pet['exp'] = exp - needed # 扣除消耗
-                
+                pet['exp'] = exp - needed
                 if not quiet:
                     self._show_msg(f"升级！{pet['name']} -> Lv.{pet['level']}")
                     pet['mood'] = 100
                     pet['health'] = 100
                 
-                # 更新实体大小
-                if self.current_entity:
-                    self.current_entity.set_level(pet['level'])
-                
-                # 继续下一轮循环，检查是否还能再升
+                # 更新对应实体的等级大小
+                # 需要找到对应的实体对象
+                for entity in self.pet_entities:
+                    if entity.pet_data is pet: # 通过对象引用判断
+                        entity.set_level(pet['level'])
+                        break
                 continue 
-                
-            # === 情况 B: 降级 ===
+            
+            # 降级
             elif exp < 0 and level > 1:
                 pet['level'] = level - 1
-                
-                # 获取降级后的那一级的经验上限
                 if hasattr(settings, 'get_exp_needed'):
                     prev_needed = settings.get_exp_needed(pet['level'])
-                else:
-                    prev_needed = 100 * pet['level']
-                
-                # exp 是负数，加上上一级的上限
+                else: prev_needed = 100 * pet['level']
                 pet['exp'] = prev_needed + exp 
+                if not quiet: self._show_msg(f"警报！{pet['name']} 降级为 Lv.{pet['level']}!")
                 
-                if not quiet:
-                    self._show_msg(f"警报！{pet['name']} 降级为 Lv.{pet['level']}!")
-                
-                if self.current_entity:
-                    self.current_entity.set_level(pet['level'])
-                
-                # 继续下一轮循环，检查是否还要再降
+                for entity in self.pet_entities:
+                    if entity.pet_data is pet:
+                        entity.set_level(pet['level'])
+                        break
                 continue
-            
-            # === 情况 C: 正常，退出循环 ===
             break
 
     def _show_msg(self, text):
@@ -393,7 +390,9 @@ class PetScene(BaseGame):
 
     def update(self, dt):
         super().update(dt)
-        if self.current_entity: self.current_entity.update()
+        # 更新所有实体
+        for entity in self.pet_entities:
+            entity.update()
         if self.msg_timer > 0: self.msg_timer -= 1
 
     def _draw_text_with_outline(self, surface, text, font, pos, color, outline_color=(0,0,0)):
@@ -417,32 +416,12 @@ class PetScene(BaseGame):
                 cx = settings.SCREEN_WIDTH//2 - self.font.size(center_txt)[0]//2
                 self._draw_text_with_outline(surface, center_txt, self.font, (cx, settings.SCREEN_HEIGHT//2 - 50), COLORS['white'])
             else:
-                if self.current_entity:
-                    self.current_entity.draw(surface)
-                    curr_pet = self.pets_data[self.current_index]
-                    
-                    # 【UI调整】名字往上挪，避免挡住变大的宠物
-                    name_str = f"Lv.{curr_pet.get('level', 1)}  {curr_pet['name']}"
-                    name_w = self.font_title.size(name_str)[0]
-                    # 之前是 -140，现在改成 -180
-                    name_pos = (settings.SCREEN_WIDTH//2 - name_w//2, settings.SCREEN_HEIGHT//2 - 180)
-                    self._draw_text_with_outline(surface, name_str, self.font_title, name_pos, COLORS['yellow'])
-                    
-                    # 经验条
-                    exp = curr_pet.get('exp', 0)
-                    level = curr_pet.get('level', 1)
-                    needed = settings.get_exp_needed(level) # 使用函数获取所需经验
-                    
-                    bar_w, bar_h = 200, 8
-                    bar_x = settings.SCREEN_WIDTH//2 - bar_w//2
-                    bar_y = name_pos[1] + 45
-                    pygame.draw.rect(surface, (50, 50, 50), (bar_x, bar_y, bar_w, bar_h), border_radius=4)
-                    fill_w = int(bar_w * (exp / needed))
-                    if fill_w > 0: pygame.draw.rect(surface, (0, 200, 255), (bar_x, bar_y, fill_w, bar_h), border_radius=4)
-                    
-                    page_str = f"{self.current_index + 1} / {len(self.pets_data)}"
-                    self._draw_text_with_outline(surface, page_str, self.font, (settings.SCREEN_WIDTH//2 - 20, settings.SCREEN_HEIGHT//2 + 130), COLORS['white'])
+                # 1. 绘制所有实体 (按Y轴排序，实现简单的遮挡关系)
+                sorted_entities = sorted(self.pet_entities, key=lambda e: e.rect.bottom)
+                for entity in sorted_entities:
+                    entity.draw(surface)
 
+                # 2. 绘制选中宠物的状态面板 (只显示当前选中的)
                 self._draw_stats(surface)
 
         for btn in self.buttons: btn.draw(surface)
@@ -453,8 +432,7 @@ class PetScene(BaseGame):
         if self.show_name_modal: self._draw_name_modal(surface)
         if self.show_abandon_modal: self._draw_abandon_modal(surface)
 
-    # ... (_draw_name_modal, _draw_abandon_modal, _draw_stats 保持不变) ...
-    # 请保留你原来的这几个绘制方法
+    # ... (_draw_name_modal, _draw_abandon_modal 保持不变) ...
     def _draw_name_modal(self, surface):
         mask = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         mask.set_alpha(180)
@@ -493,14 +471,26 @@ class PetScene(BaseGame):
 
     def _draw_stats(self, surface):
         if not self.pets_data: return
+        # 只绘制当前 current_index 的数据
         p = self.pets_data[self.current_index]
-        panel_x, panel_y = 20, 80
+        
+        # 【修改】将 panel_y 从 80 改为 130 (向下移动 50 像素)
+        panel_x, panel_y = 20, 130 
+        
         panel_w, panel_h = 320, 150
         if p.get('is_sick'): panel_h += 40
+        
+        # 背景板
         s = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         pygame.draw.rect(s, (0, 0, 0, 160), s.get_rect(), border_radius=15)
-        pygame.draw.rect(s, (255, 255, 255, 50), s.get_rect(), 2, border_radius=15)
+        pygame.draw.rect(s, (255, 255, 0, 100), s.get_rect(), 2, border_radius=15) # 黄色边框强调当前选中
         surface.blit(s, (panel_x, panel_y))
+        
+        # 名字 (跟随 panel_y 自动下移)
+        name_str = f"Lv.{p.get('level', 1)}  {p['name']}"
+        self._draw_text_with_outline(surface, name_str, self.font_title, (panel_x + 15, panel_y - 40), COLORS['yellow'])
+
+        # 属性条
         bar_x = panel_x + 80
         bar_y_start = panel_y + 15
         bar_w, bar_h = 200, 20
@@ -510,6 +500,7 @@ class PetScene(BaseGame):
         stats = [("饱食", p.get('hunger', 0), COLORS['green']),
                  ("健康", p.get('health', 0), COLORS['red']),
                  ("心情", display_mood, COLORS['yellow'])]
+        
         for i, (label, val, color) in enumerate(stats):
             y = bar_y_start + i * gap
             txt = self.font.render(f"{label}", True, COLORS['white'])
@@ -520,5 +511,15 @@ class PetScene(BaseGame):
             val_txt = pygame.font.SysFont("arial", 12).render(f"{int(val)}/100", True, COLORS['black'])
             val_rect = val_txt.get_rect(center=(bar_x + bar_w//2, y + 5 + bar_h//2))
             surface.blit(val_txt, val_rect)
+
+        # 经验条绘制在面板最下方
+        exp = p.get('exp', 0)
+        level = p.get('level', 1)
+        needed = settings.get_exp_needed(level)
+        exp_bar_y = panel_y + panel_h + 10
+        pygame.draw.rect(surface, (50, 50, 50), (panel_x, exp_bar_y, panel_w, 10), border_radius=5)
+        fill_exp = int(panel_w * (exp / needed))
+        if fill_exp > 0: pygame.draw.rect(surface, (0, 200, 255), (panel_x, exp_bar_y, fill_exp, 10), border_radius=5)
+        
         if p.get('is_sick'):
             self._draw_text_with_outline(surface, "警告: 宠物生病了!", self.font, (panel_x + 20, panel_y + 3 * gap + 15), COLORS['red'])

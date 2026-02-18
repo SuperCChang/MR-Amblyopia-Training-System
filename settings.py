@@ -29,12 +29,39 @@ COLORS = {
 
 # --- 难度配置表 (只控制背景和速度) ---
 DIFFICULTY_LEVELS = {
-    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 20, 
-               'switch_interval': 5000, 'rotate_ratio': 1,'coin_rate': 2},
-    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 10,  'snake_speed': 200, 'snake_size': 30,
-               'switch_interval': 5000, 'rotate_ratio': 1.5, 'coin_rate': 3},
-    'HARD':   {'bg_grid_size': 15,  'stripe_width': 5,  'snake_speed': 120, 'snake_size': 40, 
-               'switch_interval': 5000, 'rotate_ratio': 10, 'coin_rate': 5},
+    'EASY':   {'bg_grid_size': 30, 'stripe_width': 30, 'snake_speed': 250, 'snake_size': 20, 'apple_amount': 3,
+               'switch_interval': 5000, 'rotate_ratio': 1,'coin_rate': 2,
+               'catch': {'base_size': 400, 'min_size': 300, 'speed': 40, 'hp': 5, 'coin_per_hit': 0.1},
+               'fruit': {
+                    'spawn_interval': 1500, 
+                    'speed_min': 18, 'speed_max': 22, 
+                    'gravity': 0.25, 
+                    'base_size': 200, 
+                    'max_active': 3
+                }
+               },
+    'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 10,  'snake_speed': 200, 'snake_size': 30, 'apple_amount': 4,
+               'switch_interval': 5000, 'rotate_ratio': 1.5, 'coin_rate': 3,
+               'catch': {'base_size': 250, 'min_size': 150, 'speed': 80, 'hp': 8, 'coin_per_hit': 0.1},
+               'fruit': {
+                    'spawn_interval': 800, 
+                    'speed_min': 20, 'speed_max': 25, 
+                    'gravity': 0.3, 
+                    'base_size': 150, 
+                    'max_active': 5
+                }
+               },
+    'HARD':   {'bg_grid_size': 15,  'stripe_width': 5,  'snake_speed': 150, 'snake_size': 40, 'apple_amount': 6,
+               'switch_interval': 5000, 'rotate_ratio': 2, 'coin_rate': 5,
+               'catch': {'base_size': 150, 'min_size': 100, 'speed': 100, 'hp': 10, 'coin_per_hit': 0.1},
+               'fruit': {
+                    'spawn_interval': 500, 
+                    'speed_min': 20, 'speed_max': 25, 
+                    'gravity': 0.35, 
+                    'base_size': 100, 
+                    'max_active': 8
+                }
+               },
 }
 
 TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
@@ -92,6 +119,31 @@ PET_SHOP_LIST = [
 
 def get_exp_needed(level):
     # 稍微平滑一点的曲线
-    if level < 10: return 150
-    elif level < 20: return 400
+    if level < 10: return 100
+    elif level < 20: return 300
     else: return 800
+
+
+CATCH_CONFIG = {
+    'images': ['thief_1.png', 'thief_2.png', 'thief_3.png'],
+    'sound_hit': 'hit.wav',   # 点击音效
+    'sound_die': 'die.wav',   # 死亡音效 (可复用蛇的)
+    'blink_speed': 5,         # 透明闪烁速度
+}
+
+FRUIT_CONFIG = {
+    # 水果列表：ID, 图片名, 颜色(用于粒子特效)
+    'fruits': [
+        {'id': 'apple',      'img': 'fruit_apple.png',      'color': (200, 50, 50)},
+        {'id': 'banana',     'img': 'fruit_banana.png',     'color': (255, 255, 0)},
+        {'id': 'watermelon', 'img': 'fruit_watermelon.png', 'color': (50, 200, 50)},
+        {'id': 'orange',     'img': 'fruit_orange.png',     'color': (255, 165, 0)},
+    ],
+    'bomb_img': 'fruit_bomb.png',
+    'dragon_img': 'fruit_dragon.png',
+    
+    'sound_throw': 'throw.wav',  # 抛出声音
+    'sound_splat': 'splat.wav',  # 切开声音
+    'sound_boom': 'boom.wav',    # 炸弹声音
+    'sound_bonus': 'bonus.wav',  # 火龙果连击声音
+}
