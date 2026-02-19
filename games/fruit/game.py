@@ -124,7 +124,7 @@ class FruitGame(BaseGame):
         self.snd_boom = self._load_snd(FRUIT_CONFIG['sound_boom'])
         self.snd_bonus = self._load_snd(FRUIT_CONFIG['sound_bonus'])
         
-        self.font = pygame.font.SysFont("arial", 24, bold=True)
+        self.font = pygame.font.SysFont("simhei", 24, bold=True)
         self.font_big = pygame.font.SysFont("simhei", 60, bold=True)
         
         self.game_over_timer = 0 
@@ -237,6 +237,7 @@ class FruitGame(BaseGame):
         elif fruit.kind == 'BOMB':
             if self.snd_boom: self.snd_boom.play()
             print("切到炸弹！")
+            DataManager().add_coins(-1) 
             self.fruits.clear()
             self.particles.clear()
             self.game_over_timer = 2000 
@@ -273,9 +274,9 @@ class FruitGame(BaseGame):
         surface.blit(s, (0,0))
         
         seconds = int(self.time / 1000)
-        time_str = f"Time: {seconds//60:02}:{seconds%60:02}"
+        time_str = f"时间: {seconds//60:02}:{seconds%60:02}"
         current_coins = DataManager().get_coins()
-        coin_str = f"Coins: {current_coins:.1f}"
+        coin_str = f"金币: {current_coins:.1f}"
         
         txt_time = self.font.render(time_str, True, COLORS['white'])
         txt_coins = self.font.render(coin_str, True, COLORS['yellow'])

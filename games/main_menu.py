@@ -54,9 +54,9 @@ class MainMenu(BaseGame):
         # --- 难度选择按钮生成器 ---
         def create_diff_btns(y_start):
             return [
-                Button(cx - w//2, y_start, w, h, "新手模式", self.font_btn, bg_color=COLORS['green']),
-                Button(cx - w//2, y_start + gap, w, h, "熟手模式", self.font_btn, bg_color=COLORS['yellow']),
-                Button(cx - w//2, y_start + gap*2, w, h, "高手模式", self.font_btn, bg_color=COLORS['red']),
+                Button(cx - w//2, y_start, w, h, "新手", self.font_btn, bg_color=COLORS['green']),
+                Button(cx - w//2, y_start + gap, w, h, "熟手", self.font_btn, bg_color=COLORS['yellow']),
+                Button(cx - w//2, y_start + gap*2, w, h, "高手", self.font_btn, bg_color=COLORS['red']),
                 Button(cx - w//2, y_start + gap*3, w, h, "返回上一级", self.font_btn, bg_color=COLORS['grey'])
             ]
 

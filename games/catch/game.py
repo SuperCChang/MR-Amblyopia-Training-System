@@ -184,11 +184,11 @@ class CatchGame(BaseGame):
         seconds = int(self.time / 1000)
         minutes = seconds // 60
         secs = seconds % 60
-        time_str = f"当前时间: {minutes:02}:{secs:02}"
+        time_str = f"时间: {minutes:02}:{secs:02}"
         
         # 获取当前金币 (保留1位小数)
         current_coins = DataManager().get_coins()
-        coin_str = f"当前金币: {current_coins:.1f}"
+        coin_str = f"金币: {current_coins:.1f}"
         
         # 渲染文字
         txt_time = self.font.render(time_str, True, COLORS['white'])
