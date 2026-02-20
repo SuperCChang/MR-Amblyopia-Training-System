@@ -352,7 +352,7 @@ class SnakeGame(BaseGame):
         # 2. 获取当前总金币 (实时更新)
         # 注意：这里直接从 DataManager 获取全局金币，这样你吃苹果时数字会实时跳动
         current_coins = DataManager().get_coins()
-        coin_str = f"金币: {current_coins}"
+        coin_str = f"金币: {current_coins:.1f}"
         
         # 3. 绘制背景条 (半透明黑条)
         s = pygame.Surface((settings.SCREEN_WIDTH, 40))

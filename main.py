@@ -1,5 +1,10 @@
 # main.py (Debug 版本)
-import pygame, sys, os
+import sys, os
+
+# 居中显示窗口
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+
+import pygame
 import settings
 from core.app import GameManager
 from core.path_utils import resource_path
@@ -12,7 +17,7 @@ def main():
     # channels=2: 双声道
     # buffer=512: 缓冲区大小，越小延迟越低，但太小可能没声音。如果还不行，尝试改为 2048 或 4096
     try:
-        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=512)
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=4096)
         pygame.mixer.init()
         print("Audio mixer initialized successfully.")
     except Exception as e:

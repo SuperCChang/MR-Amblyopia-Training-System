@@ -114,7 +114,7 @@ class FruitGame(BaseGame):
         super().__init__(app)
         self.fruits = []
         self.particles = []
-        self.mouse_trail = [] 
+        # self.mouse_trail = [] 
         
         self.time = 0
         self.spawn_timer = 0
@@ -143,7 +143,7 @@ class FruitGame(BaseGame):
         
         self.fruits = []
         self.particles = []
-        self.mouse_trail = []
+        # self.mouse_trail = []
         self.time = 0
         self.game_over_timer = 0
         self.spawn_timer = 0
@@ -154,7 +154,9 @@ class FruitGame(BaseGame):
         if self.game_over_timer > 0:
             self.game_over_timer -= dt
             if self.game_over_timer <= 0:
-                self.on_enter() 
+                # self.on_enter()
+                self.game_over_timer = 0 
+                self.spawn_timer = 0 
             return
 
         self.time += dt
@@ -178,8 +180,8 @@ class FruitGame(BaseGame):
             p.update()
         self.particles = [p for p in self.particles if p.life > 0]
         
-        if len(self.mouse_trail) > 0:
-            self.mouse_trail.pop(0)
+        # if len(self.mouse_trail) > 0:
+            # self.mouse_trail.pop(0)
 
     def _spawn_fruit(self, diff_cfg):
         x = random.randint(150, settings.SCREEN_WIDTH - 150)
@@ -210,10 +212,10 @@ class FruitGame(BaseGame):
         super().handle_input(event)
         
         if event.type == pygame.MOUSEMOTION:
-            self.mouse_trail.append(event.pos)
+            # self.mouse_trail.append(event.pos)
             # 【修改 1】让刀光轨迹更长一点 (从 8 改为 15)
-            if len(self.mouse_trail) > 15: 
-                self.mouse_trail.pop(0)
+            # if len(self.mouse_trail) > 15: 
+                # self.mouse_trail.pop(0)
             
             self._check_slice(event.pos)
 
@@ -229,27 +231,32 @@ class FruitGame(BaseGame):
                     f.sliced = True
                     
     def _handle_slice(self, fruit):
+        # 获取当前难度的配置
+        diff_cfg = DIFFICULTY_LEVELS[self.app.difficulty]['fruit']
+        # 获取配置的金币，默认0.5
+        coin_val = diff_cfg.get('coin_per_slice', 0.5)
+
         if fruit.kind == 'NORMAL':
             if self.snd_splat: self.snd_splat.play()
-            DataManager().add_coins(0.5)
+            DataManager().add_coins(coin_val)
             self._spawn_particles(fruit.x, fruit.y, fruit.type_data['color'])
             
         elif fruit.kind == 'BOMB':
             if self.snd_boom: self.snd_boom.play()
             print("切到炸弹！")
-            DataManager().add_coins(-1) 
+            DataManager().add_coins(-5 * coin_val) 
             self.fruits.clear()
             self.particles.clear()
             self.game_over_timer = 2000 
             
         elif fruit.kind == 'DRAGON':
             if self.snd_bonus: self.snd_bonus.stop(); self.snd_bonus.play()
-            DataManager().add_coins(0.2) 
+            DataManager().add_coins(coin_val * 0.5) 
             self._spawn_particles(fruit.x, fruit.y, (255, 0, 255), count=3)
             # fruit.vy -= 2 
             # fruit.vx += random.uniform(-1, 1)
 
-    def _spawn_particles(self, x, y, color, count=15):
+    def _spawn_particles(self, x, y, color, count=5):
         for _ in range(count):
             self.particles.append(Particle(x, y, color))
 
@@ -261,11 +268,11 @@ class FruitGame(BaseGame):
             p.draw(surface)
             
         # 【修改 2】绘制更显眼的双层刀光
-        if len(self.mouse_trail) > 1:
+        # if len(self.mouse_trail) > 1:
             # 外层：青色光晕 (更粗)
-            pygame.draw.lines(surface, (0, 255, 255), False, self.mouse_trail, 10)
+            # pygame.draw.lines(surface, (0, 255, 255), False, self.mouse_trail, 10)
             # 内层：白色核心 (稍细)
-            pygame.draw.lines(surface, (255, 255, 255), False, self.mouse_trail, 4)
+            # pygame.draw.lines(surface, (255, 255, 255), False, self.mouse_trail, 4)
 
         # UI
         s = pygame.Surface((settings.SCREEN_WIDTH, 40))
@@ -289,6 +296,6 @@ class FruitGame(BaseGame):
             # 这里删除了原本的 overlay 代码，不再有全屏遮罩
             
             # 只显示文字 (红色大字)
-            txt = self.font_big.render("BOOM!", True, (255, 0, 0))
+            txt = self.font_big.render("哎呀！", True, (0, 0, 0))
             rect = txt.get_rect(center=(settings.SCREEN_WIDTH//2, settings.SCREEN_HEIGHT//2))
             surface.blit(txt, rect)

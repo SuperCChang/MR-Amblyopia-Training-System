@@ -136,9 +136,11 @@ class DataManager:
                 # 1. 基础衰减
                 loss_hunger = cycles * cfg.get('hunger_decay', 3)
                 loss_mood = cycles * cfg.get('mood_decay', 2)
+                loss_health_natural = cycles * cfg.get('health_decay_natural', 0.6)
                 
                 pet['hunger'] = max(0, pet['hunger'] - loss_hunger)
                 pet['mood'] = max(0, pet['mood'] - loss_mood)
+                pet['health'] = max(0, pet['health'] - loss_health_natural)
                 
                 # 2. 生病判定
                 if not pet.get('is_sick', False):

@@ -7,24 +7,49 @@ from settings import COLORS
 class BackgroundRenderer:
     # 缓存：键 -> Surface
     _stripe_cache = {}
+    _rotated_cache = {} # 【新增】缓存当前帧角度的抗锯齿图像
     _last_screen_size = (0, 0)
 
     @staticmethod
-    def draw(surface, mode_index, current_time, grid_size, stripe_width, rotate_ratio):
+    def draw(surface, mode_index, current_time, grid_size, stripe_width, rotate_ratio, difficulty='EASY'):
         # 0. 分辨率变化检测
         current_size = (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)
         if current_size != BackgroundRenderer._last_screen_size:
             BackgroundRenderer._stripe_cache.clear()
+            BackgroundRenderer._rotated_cache.clear() # 清除旋转缓存
             BackgroundRenderer._last_screen_size = current_size
 
-        # --- Group 1: 纯色 (0-2) ---
-        if mode_index == 0: surface.fill(COLORS['red'])
-        elif mode_index == 1: surface.fill(COLORS['yellow'])
-        elif mode_index == 2: surface.fill(COLORS['green'])
+        # --- Group 1: 纯色闪烁 (0-2) ---
+        if mode_index in [0, 1, 2]:
+            # 【需求1】根据难度设定闪烁周期 (毫秒)
+            # EASY: 1000ms周期 (亮500, 暗500) -> 1 Hz
+            # MEDIUM: 500ms周期 (亮250, 暗250) -> 2 Hz
+            # HARD: 250ms周期 (亮125, 暗125) -> 4 Hz
+            flash_intervals = {'EASY': 500, 'MEDIUM': 250, 'HARD': 125}
+            interval = flash_intervals.get(difficulty, 500)
             
+            # 判断当前是"亮"还是"暗"
+            is_color = (current_time // interval) % 2 == 0
+            
+            if is_color:
+                if mode_index == 0: surface.fill(COLORS['red'])
+                elif mode_index == 1: surface.fill(COLORS['yellow'])
+                elif mode_index == 2: surface.fill(COLORS['green'])
+            else:
+                surface.fill(COLORS['black']) # 黑底交替，形成闪烁
+
         # --- Group 2: 旋转条栅 (3-5) ---
         elif mode_index in [3, 4, 5]:
-            angle = (current_time / 50) % 360 * rotate_ratio
+            # 【需求2】降低条栅格旋转的"帧率" (注意：不是速度)
+            # 我们将连续的时间"阶梯化"，设定背景目标帧率为 10 FPS
+            bg_fps = 10
+            step_ms = 1000 // bg_fps
+            # 这样算出来的时间，在 100ms 内都是同一个固定值
+            stepped_time = (current_time // step_ms) * step_ms
+            
+            # 使用阶梯化后的时间计算角度，角度会一卡一卡地跳跃
+            angle = (stepped_time / 50) % 360 * rotate_ratio
+            
             c1, c2 = COLORS['black'], COLORS['white']
             if mode_index == 4: c1, c2 = COLORS['red'], COLORS['yellow']
             if mode_index == 5: c1, c2 = COLORS['blue'], COLORS['yellow']
@@ -45,50 +70,45 @@ class BackgroundRenderer:
 
     @staticmethod
     def _draw_rotating_stripes(surface, angle, color1, color2, width):
-        # 1. 缓存键值 (加入 supersample 标记以防万一，虽然这里隐式包含在width里)
         cache_key = (width, color1, color2, "supersampled")
 
-        # 2. 创建缓存 (如果不存在)
+        # 1. 创建基础超采样缓存
         if cache_key not in BackgroundRenderer._stripe_cache:
             w, h = settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT
-            # 计算对角线长度，保证旋转时不会露出黑边
             diagonal = math.ceil(math.sqrt(w**2 + h**2))
             size = diagonal + 20 
 
-            # === 【核心优化：预渲染超采样】 ===
-            # 我们创建一个 2 倍大小的画布进行绘制
-            # 然后缩小回 1 倍，这样边缘就会自带抗锯齿效果
             scale_ratio = 2
             big_size = size * scale_ratio
             big_width = width * scale_ratio
             
-            # 在大画布上绘图
             temp_surf = pygame.Surface((big_size, big_size))
             temp_surf.fill(color1)
             
-            # 绘制大条纹
             for x in range(0, big_size, big_width * 2):
                 pygame.draw.rect(temp_surf, color2, (x + big_width, 0, big_width, big_size))
             
-            # 使用 smoothscale 高质量缩小回目标尺寸 (抗锯齿发生的步骤)
-            # 这一步比较慢，但只在游戏加载或切换难度时执行一次，不影响游戏帧率
             final_surf = pygame.transform.smoothscale(temp_surf, (size, size))
-
-            # 转换为显示格式，加速 blit
             if pygame.display.get_surface():
                 final_surf = final_surf.convert()
 
             BackgroundRenderer._stripe_cache[cache_key] = final_surf
 
-        # 3. 取出源图 (此时源图已经是抗锯齿过的了)
         source_surf = BackgroundRenderer._stripe_cache[cache_key]
 
-        # 4. 实时旋转
-        # 依然使用最快的 rotate (而非 slow rotozoom)，因为源图已经柔化过
-        # 这样旋转产生的锯齿感会大幅降低，且帧率保持 60FPS
-        rotated_surf = pygame.transform.rotate(source_surf, angle)
+        # 2. === 【核心优化：高质量抗锯齿 + 旋转帧缓存】 ===
+        # 获取当前缓存的角度和图像
+        cached_angle, cached_surf = BackgroundRenderer._rotated_cache.get(cache_key, (None, None))
         
-        # 5. 居中绘制
+        # 如果角度发生了变化（例如每100ms跳跃一次），才进行沉重的抗锯齿旋转计算
+        if cached_angle != angle:
+            # 放弃原本有锯齿的 rotate，改用高质量自带平滑滤波的 rotozoom (scale=1.0)
+            cached_surf = pygame.transform.rotozoom(source_surf, angle, 1.0)
+            BackgroundRenderer._rotated_cache[cache_key] = (angle, cached_surf)
+        
+        # 对于不更新角度的那 50 多帧，直接 0 延迟渲染缓存图！
+        rotated_surf = cached_surf
+        
         rect = rotated_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
         surface.blit(rotated_surf, rect)
 

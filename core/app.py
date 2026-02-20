@@ -1,6 +1,8 @@
 # core/app.py
 import pygame
-from settings import FPS, WINDOW_TITLE
+import os
+from settings import FPS, WINDOW_TITLE, CURSOR_CONFIG
+from core.path_utils import resource_path
 
 class GameManager:
     def __init__(self):
@@ -16,6 +18,9 @@ class GameManager:
         # FPS显示
         self.show_fps = False
         self.font_fps = pygame.font.SysFont("arial", 20, bold=True)
+        
+        # 【新增】初始化自定义光标
+        self._init_custom_cursor()
         
         # 加载所有场景
         self.load_scenes()
@@ -55,6 +60,53 @@ class GameManager:
                 self.current_scene.on_enter()
         else:
             print(f"[Error] 试图切换到不存在的场景: {scene_name}")
+
+    def _init_custom_cursor(self):
+        if not CURSOR_CONFIG.get('enabled', False):
+            return
+
+        try:
+            cursor_surf = None
+            hotspot = CURSOR_CONFIG.get('hotspot', (0, 0))
+            
+            # 1. 尝试加载图片
+            img_name = CURSOR_CONFIG.get('image', 'cursor.png')
+            img_path = resource_path(os.path.join('assets', 'images', img_name))
+            
+            if os.path.exists(img_path):
+                # 加载并缩放
+                raw_cursor = pygame.image.load(img_path).convert_alpha()
+                target_size = CURSOR_CONFIG.get('size', (64, 64))
+                cursor_surf = pygame.transform.smoothscale(raw_cursor, target_size)
+                print(f"Loaded custom cursor from: {img_name}")
+            else:
+                # 2. 图片不存在，绘制默认的高对比度光标 (代码保底)
+                print("Cursor image not found. Using fallback style.")
+                radius = CURSOR_CONFIG.get('fallback_radius', 20)
+                outline = CURSOR_CONFIG.get('fallback_outline', 3)
+                size = radius * 2 + outline * 2
+                
+                # 创建一个透明图层
+                cursor_surf = pygame.Surface((size, size), pygame.SRCALPHA)
+                
+                # 画黑色描边 (增强对比度)
+                pygame.draw.circle(cursor_surf, (0, 0, 0), (size//2, size//2), radius + outline)
+                # 画内部颜色 (高亮色)
+                color = CURSOR_CONFIG.get('fallback_color', (255, 255, 0))
+                pygame.draw.circle(cursor_surf, color, (size//2, size//2), radius)
+                
+                # 对于圆形光标，热点通常在中心
+                hotspot = (size // 2, size // 2)
+
+            # 3. 应用光标 (需要 Pygame 2.0+)
+            if cursor_surf:
+                cursor = pygame.cursors.Cursor(hotspot, cursor_surf)
+                pygame.mouse.set_cursor(cursor)
+                
+        except Exception as e:
+            print(f"Failed to set cursor: {e}")
+            # 出错则回退到系统默认
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     def handle_input(self, event):
         if self.current_scene:

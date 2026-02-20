@@ -64,7 +64,7 @@ class BaseGame:
         current_time = pygame.time.get_ticks()
         
         # 3. 调用渲染器
-        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width, rotate_ratio)
+        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width, rotate_ratio, self.app.difficulty)
         
         self.draw_content(surface)
 
