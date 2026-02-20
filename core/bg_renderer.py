@@ -67,6 +67,36 @@ class BackgroundRenderer:
             alt_c = color_b if state == 0 else color_a
             
             BackgroundRenderer._draw_checkerboard(surface, main_c, alt_c, grid_size)
+        
+        elif mode_index == 9:
+            # 1. 红黄绿快速变换
+            # 难度越高，切换间隔越短 (速度越快)
+            intervals = {'EASY': 300, 'MEDIUM': 150, 'HARD': 75}
+            interval = intervals.get(difficulty, 300)
+            
+            # 周期为3的循环
+            color_idx = (current_time // interval) % 3
+            if color_idx == 0: surface.fill(COLORS['red'])
+            elif color_idx == 1: surface.fill(COLORS['yellow'])
+            else: surface.fill(COLORS['green'])
+
+        elif mode_index == 10:
+            # 2. 中心黑色实心圆 + 其他部分黑白闪烁
+            # 闪烁频率：难度越高，闪烁越快
+            flash_intervals = {'EASY': 500, 'MEDIUM': 250, 'HARD': 125}
+            interval = flash_intervals.get(difficulty, 500)
+            is_white = (current_time // interval) % 2 == 0
+            
+            # 绘制黑白闪烁底色
+            surface.fill(COLORS['white'] if is_white else COLORS['black'])
+            
+            # 黑圆大小：难度越高，圆越小
+            radiuses = {'EASY': 300, 'MEDIUM': 200, 'HARD': 100}
+            radius = radiuses.get(difficulty, 200)
+            
+            # 绘制中心黑圆
+            center = (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2)
+            pygame.draw.circle(surface, COLORS['black'], center, radius)
 
     @staticmethod
     def _draw_rotating_stripes(surface, angle, color1, color2, width):

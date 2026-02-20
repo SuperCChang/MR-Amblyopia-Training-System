@@ -57,7 +57,8 @@ DIFFICULTY_LEVELS = {
                     'base_size': 200, 
                     'max_active': 3,
                     'coin_per_slice': 0.6
-                }
+                },
+                'pigeon': {'speed': 45, 'bomb_chance': 0.1, 'slots': 8, 'hit_angle': 20, 'coin': 0.6},
                },
     'MEDIUM': {'bg_grid_size': 20, 'stripe_width': 10,  'snake_speed': 200, 'snake_size': 30, 'apple_amount': 4,
                'switch_interval': 5000, 'rotate_ratio': 1.5, 'coin_rate': 2,
@@ -75,7 +76,8 @@ DIFFICULTY_LEVELS = {
                     'base_size': 150, 
                     'max_active': 5,
                     'coin_per_slice': 0.4
-                }
+                },
+                'pigeon': {'speed': 90, 'bomb_chance': 0.2, 'slots': 12, 'hit_angle': 15, 'coin': 0.5},
                },
     'HARD':   {'bg_grid_size': 15,  'stripe_width': 5,  'snake_speed': 150, 'snake_size': 40, 'apple_amount': 6,
                'switch_interval': 5000, 'rotate_ratio': 2, 'coin_rate': 2,
@@ -93,7 +95,8 @@ DIFFICULTY_LEVELS = {
                     'base_size': 100, 
                     'max_active': 8,
                     'coin_per_slice': 0.2
-                }
+                },
+                'pigeon': {'speed': 150, 'bomb_chance': 0.35, 'slots': 16, 'hit_angle': 10, 'coin': 0.4},
                },
 }
 
@@ -180,4 +183,18 @@ FRUIT_CONFIG = {
     'sound_splat': 'splat.wav',  # 切开声音
     'sound_boom': 'boom.wav',    # 炸弹声音
     'sound_bonus': 'bonus.wav',  # 火龙果连击声音
+}
+
+PIGEON_CONFIG = {
+    'bird_img': 'pigeon_bird.png',
+    'head_img': 'pigeon_head.png',
+    'food_img': 'fruit_apple.png',
+    'bomb_img': 'fruit_bomb.png',
+    
+    'sound_peck': 'splat.wav',
+    'sound_eat': 'eat.wav',
+    'sound_bad': 'boom.wav',
+    
+    'wheel_radius': 150,     # 旋转圆盘的半径
+    'bird_base_y': 800       # 鸟底座的 Y 坐标 (根据你的屏幕高度微调)
 }

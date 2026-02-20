@@ -12,8 +12,14 @@ class MainMenu(BaseGame):
         super().__init__(app)
         self.font_title = pygame.font.SysFont("simhei", 60, bold=True)
         self.font_btn = pygame.font.SysFont("simhei", 30)
+
+        # 放置在右下角
+        self.checkbox_rect = pygame.Rect(settings.SCREEN_WIDTH - 280, settings.SCREEN_HEIGHT - 60, 30, 30)
+        # 初始化全局变量（如果还没设置过的话）
+        if not hasattr(settings, 'ENABLE_CIRCLE_BG'):
+            settings.ENABLE_CIRCLE_BG = False
         
-        # 状态机：ROOT, SNAKE_DIFF, CATCH_DIFF, FRUIT_DIFF
+        # 状态机：ROOT, SNAKE_DIFF, CATCH_DIFF, FRUIT_DIFF, PIGEON_DIFF
         self.menu_state = 'ROOT' 
         self.init_buttons()
         self.bg_image = None
@@ -45,10 +51,10 @@ class MainMenu(BaseGame):
         self.btns_root = [
             Button(cx - w//2, start_y, w, h, "贪吃蛇", self.font_btn, bg_color=COLORS['blue']),
             Button(cx - w//2, start_y + gap, w, h, "抓小偷", self.font_btn, bg_color=COLORS['red']),
-            # 【新增】切水果按钮
-            Button(cx - w//2, start_y + gap*2, w, h, "切水果", self.font_btn, bg_color=(255, 140, 0)), # 橙色
-            Button(cx - w//2, start_y + gap*3, w, h, "宠物乐园", self.font_btn, bg_color=COLORS['green']),
-            Button(cx - w//2, start_y + gap*4, w, h, "退出系统", self.font_btn, bg_color=COLORS['grey'])
+            Button(cx - w//2, start_y + gap*2, w, h, "切水果", self.font_btn, bg_color=(255, 140, 0)),
+            Button(cx - w//2, start_y + gap*3, w, h, "疯狂鸽子", self.font_btn, bg_color=COLORS['yellow']),
+            Button(cx - w//2, start_y + gap*4, w, h, "宠物乐园", self.font_btn, bg_color=COLORS['green']),
+            Button(cx - w//2, start_y + gap*5, w, h, "退出系统", self.font_btn, bg_color=COLORS['grey'])
         ]
         
         # --- 难度选择按钮生成器 ---
@@ -62,7 +68,8 @@ class MainMenu(BaseGame):
 
         self.btns_snake_diff = create_diff_btns(cy - 60)
         self.btns_catch_diff = create_diff_btns(cy - 60)
-        self.btns_fruit_diff = create_diff_btns(cy - 60) # 【新增】
+        self.btns_fruit_diff = create_diff_btns(cy - 60)
+        self.btns_pigeon_diff = create_diff_btns(cy - 60)
 
     def handle_input(self, event):
         # 1. 确定当前按钮组
@@ -71,6 +78,7 @@ class MainMenu(BaseGame):
         elif self.menu_state == 'SNAKE_DIFF': current_btns = self.btns_snake_diff
         elif self.menu_state == 'CATCH_DIFF': current_btns = self.btns_catch_diff
         elif self.menu_state == 'FRUIT_DIFF': current_btns = self.btns_fruit_diff
+        elif self.menu_state == 'PIGEON_DIFF': current_btns = self.btns_pigeon_diff
         
         # 2. 悬停
         if event.type == pygame.MOUSEMOTION:
@@ -81,13 +89,19 @@ class MainMenu(BaseGame):
             if self.menu_state == 'ROOT':
                 if self.btns_root[0].is_clicked(event): self.menu_state = 'SNAKE_DIFF'; pygame.event.clear()
                 elif self.btns_root[1].is_clicked(event): self.menu_state = 'CATCH_DIFF'; pygame.event.clear()
-                elif self.btns_root[2].is_clicked(event): self.menu_state = 'FRUIT_DIFF'; pygame.event.clear() # 【新增】
-                elif self.btns_root[3].is_clicked(event): self.app.change_scene('pet')
-                elif self.btns_root[4].is_clicked(event): self.app.is_running = False
+                elif self.btns_root[2].is_clicked(event): self.menu_state = 'FRUIT_DIFF'; pygame.event.clear()
+                elif self.btns_root[3].is_clicked(event): self.menu_state = 'PIGEON_DIFF'; pygame.event.clear()
+                elif self.btns_root[4].is_clicked(event): self.app.change_scene('pet')
+                elif self.btns_root[5].is_clicked(event): self.app.is_running = False
+                elif self.checkbox_rect.collidepoint(event.pos):
+                    # 翻转勾选状态
+                    settings.ENABLE_CIRCLE_BG = not getattr(settings, 'ENABLE_CIRCLE_BG', False)
 
             elif self.menu_state == 'SNAKE_DIFF': self._handle_diff(event, self.btns_snake_diff, 'snake')
             elif self.menu_state == 'CATCH_DIFF': self._handle_diff(event, self.btns_catch_diff, 'catch')
             elif self.menu_state == 'FRUIT_DIFF': self._handle_diff(event, self.btns_fruit_diff, 'fruit')
+            # 【修复 BUG】这里之前误传了 self.btns_fruit_diff，已修正为 self.btns_pigeon_diff
+            elif self.menu_state == 'PIGEON_DIFF': self._handle_diff(event, self.btns_pigeon_diff, 'pigeon')
 
     def _handle_diff(self, event, btns, scene_name):
         if btns[0].is_clicked(event): self._start_game(scene_name, 'EASY')
@@ -121,6 +135,7 @@ class MainMenu(BaseGame):
         elif self.menu_state == 'SNAKE_DIFF': current_title = "贪吃蛇 - 选择难度"; current_btns = self.btns_snake_diff
         elif self.menu_state == 'CATCH_DIFF': current_title = "抓小偷 - 选择难度"; current_btns = self.btns_catch_diff
         elif self.menu_state == 'FRUIT_DIFF': current_title = "切水果 - 选择难度"; current_btns = self.btns_fruit_diff
+        elif self.menu_state == 'PIGEON_DIFF': current_title = "疯狂鸽子 - 选择难度"; current_btns = self.btns_pigeon_diff
 
         cx = settings.SCREEN_WIDTH // 2
         title_img = self.font_title.render(current_title, True, COLORS['white'])
@@ -130,3 +145,16 @@ class MainMenu(BaseGame):
         surface.blit(title_img, title_rect)
         
         for btn in current_btns: btn.draw(surface)
+
+        # --- 【新增】在 ROOT 状态下绘制复选框 ---
+        if self.menu_state == 'ROOT':
+            # 画外框
+            pygame.draw.rect(surface, COLORS['white'], self.checkbox_rect, 2)
+            # 如果勾选了，画内部的绿色实心块
+            if getattr(settings, 'ENABLE_CIRCLE_BG', False):
+                inner_rect = self.checkbox_rect.inflate(-10, -10)
+                pygame.draw.rect(surface, COLORS['green'], inner_rect)
+            
+            # 绘制文字标签
+            lbl_surf = self.font_btn.render("黑圆闪烁", True, COLORS['white'])
+            surface.blit(lbl_surf, (self.checkbox_rect.right + 10, self.checkbox_rect.centery - lbl_surf.get_height() // 2))

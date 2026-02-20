@@ -37,19 +37,31 @@ class BaseGame:
         
         # 【修复】实时获取当前难度的切换间隔
         # 这样如果你在 settings 里给不同难度设置了不同的切换时间，也能生效
-        current_settings = DIFFICULTY_LEVELS[self.app.difficulty]
-        self.SWITCH_INTERVAL = current_settings['switch_interval']
+        current_settings = DIFFICULTY_LEVELS.get(self.app.difficulty, {})
+        self.SWITCH_INTERVAL = current_settings.get('switch_interval', 5000)
         
         if self.bg_timer >= self.SWITCH_INTERVAL:
-            self.bg_mode = (self.bg_mode + 1) % 9 # 0-8 循环
+            # 向前切换背景
+            self.bg_mode += 1
+            
+            # --- 【新增】判断逻辑 ---
+            # 模式9是红黄绿，一直开启。
+            # 模式10是黑圆，仅在勾选时开启。如果当前是10且没勾选，直接跳过。
+            if self.bg_mode == 10 and not getattr(settings, 'ENABLE_CIRCLE_BG', False):
+                self.bg_mode = 11
+                
+            # 如果超过了最大模式索引(当前最大为10)，则回到0
+            if self.bg_mode > 10:
+                self.bg_mode = 0
+                
             self.bg_timer = 0
 
     def draw(self, surface):
         # 1. 获取当前难度的配置
-        current_settings = DIFFICULTY_LEVELS[self.app.difficulty]
+        current_settings = DIFFICULTY_LEVELS.get(self.app.difficulty, {})
         
-        bg_g_size = current_settings['bg_grid_size']
-        s_width = current_settings['stripe_width']
+        bg_g_size = current_settings.get('bg_grid_size', 30)
+        s_width = current_settings.get('stripe_width', 30)
         
         # 2. 【核心逻辑】决定旋转速度 (rotate_ratio)
         # 逻辑：如果设置了 override_speed (比如在主菜单)，就通过计算覆盖掉默认的 rotate_ratio
@@ -58,15 +70,16 @@ class BaseGame:
             # 假设速度 20 对应倍率 1.0 (基准)
             rotate_ratio = self.override_speed / 20.0
         else:
-            # 否则使用当前难度配置的倍率
-            rotate_ratio = current_settings['rotate_ratio']
+            rotate_ratio = current_settings.get('bg_speed', 30) / 20.0
 
-        current_time = pygame.time.get_ticks()
-        
-        # 3. 调用渲染器
-        BackgroundRenderer.draw(surface, self.bg_mode, current_time, bg_g_size, s_width, rotate_ratio, self.app.difficulty)
-        
-        self.draw_content(surface)
-
-    def draw_content(self, surface):
-        pass
+        # 3. 绘制背景
+        # 注意这里不仅传入了时间，还传入了 self.app.difficulty，用于给模式9/10控制闪烁频率
+        BackgroundRenderer.draw(
+            surface, 
+            self.bg_mode, 
+            pygame.time.get_ticks(), 
+            bg_g_size, 
+            s_width, 
+            rotate_ratio,
+            self.app.difficulty
+        )

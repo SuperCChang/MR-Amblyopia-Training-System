@@ -32,6 +32,7 @@ class GameManager:
         from games.pet.scene import PetScene
         from games.catch.game import CatchGame
         from games.fruit.game import FruitGame
+        from games.pigeon.game import PigeonGame
 
         self.scenes = {
             'login': LoginScene(self),
@@ -39,7 +40,8 @@ class GameManager:
             'snake': SnakeGame(self),
             'pet': PetScene(self),
             'catch': CatchGame(self),
-            'fruit': FruitGame(self)
+            'fruit': FruitGame(self),
+            'pigeon': PigeonGame(self),
         }
         
         self.current_scene = self.scenes['login']
