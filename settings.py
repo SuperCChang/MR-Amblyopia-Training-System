@@ -104,9 +104,9 @@ TRAINING_DURATION = 10 * 60  # 训练时长 (秒)
 SPEED_ACCELERATION = 5       # 每吃一个苹果，蛇移动间隔减少多少毫秒
 MIN_MOVE_INTERVAL = 40       # 速度上限
 
-SUPABASE_URL = "https://ztljczelgprcymxwqywp.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0bGpjemVsZ3ByY3lteHdxeXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMDUyOTgsImV4cCI6MjA4NjU4MTI5OH0.3PdvN9-L8w4vKQqKRPNwun3VSN5L0Ef-wUbB21e5ToA"
-PLAYER_NAME = "MyPlayer1"
+SUPABASE_URL = ""
+SUPABASE_KEY = ""
+PLAYER_NAME = ""
 
 PET_CONFIG = {
     # --- 时间流逝 ---
@@ -197,4 +197,5 @@ PIGEON_CONFIG = {
     
     'wheel_radius': 150,     # 旋转圆盘的半径
     'bird_base_y': 800       # 鸟底座的 Y 坐标 (根据你的屏幕高度微调)
+
 }
